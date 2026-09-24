@@ -11,9 +11,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "SecureWrap Removals | Professional Packing & Protection",
+  title: "SecureWrap Removals | Packing, Moving & Export Packing",
   description:
-    "SecureWrap wraps and protects your furniture and belongings for house moves and storage. Upload photos of your items, choose your protection, and get an instant quote.",
+    "Packing and moving specialists based in Milton Keynes. We pack, wrap and move your belongings across the UK — and specialise in packing for export if you're moving abroad.",
 };
 
 export default function RootLayout({

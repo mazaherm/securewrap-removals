@@ -67,18 +67,15 @@ export const SIZE_OPTIONS: {
   { value: "large", label: "Large", description: "Larger / bulkier than typical for this item", multiplier: 1.4 },
 ];
 
-// Vans are hired from a third-party partner, so the bare vehicle hire cost
-// varies by availability — we show a range and use the midpoint. Fuel and
-// driver cost are calculated separately from actual round-trip distance
-// (see vanTravelCosts below), so they aren't baked into this range.
+// Fixed van hire (vehicle only). Fuel is added separately from the
+// journey: collection → destination + destination → our MK13 0BG depot.
 export const VAN_OPTIONS: {
   value: VanSize;
   label: string;
   description: string;
   recommendedUpTo: number;
-  hireFeeMin: number;
-  hireFeeMax: number;
-  /** Imperial MPG (diesel), used to estimate round-trip fuel cost. */
+  hireFee: number;
+  /** Imperial MPG (diesel), used to estimate journey fuel cost. */
   mpg: number;
 }[] = [
   {
@@ -86,8 +83,7 @@ export const VAN_OPTIONS: {
     label: "No van needed",
     description: "I'll arrange my own transport",
     recommendedUpTo: 0,
-    hireFeeMin: 0,
-    hireFeeMax: 0,
+    hireFee: 0,
     mpg: 0,
   },
   {
@@ -95,8 +91,7 @@ export const VAN_OPTIONS: {
     label: "Small van",
     description: "Short wheelbase — a few items or boxes, studio/1-bed",
     recommendedUpTo: 8,
-    hireFeeMin: 40,
-    hireFeeMax: 55,
+    hireFee: 150,
     mpg: 38,
   },
   {
@@ -104,8 +99,7 @@ export const VAN_OPTIONS: {
     label: "Medium van (LWB)",
     description: "2 to 3 bedroom home's worth of furniture and boxes",
     recommendedUpTo: 20,
-    hireFeeMin: 55,
-    hireFeeMax: 75,
+    hireFee: 200,
     mpg: 30,
   },
   {
@@ -113,8 +107,7 @@ export const VAN_OPTIONS: {
     label: "Luton van + tail lift",
     description: "3+ bedroom home, full house move or bulky furniture",
     recommendedUpTo: Infinity,
-    hireFeeMin: 75,
-    hireFeeMax: 100,
+    hireFee: 250,
     mpg: 22,
   },
 ];
@@ -153,24 +146,24 @@ const EXTRA_ROOM_THRESHOLD = 2;
 const EXTRA_ROOM_FEE = 12; // per room beyond the threshold, for crew time
 const WEEKEND_SURCHARGE_PCT = 0.1;
 const EVENING_SURCHARGE_PCT = 0.08;
-const PAY_NOW_DISCOUNT_PCT = 0.08;
+/** Extra charged when the customer pays the crew on the day instead of
+ * settling upfront. Pay-now is the quoted price; pay-on-the-day is this
+ * amount higher, so booking in advance is always the cheaper option. */
+export const PAY_ON_DAY_SURCHARGE = 150;
 /** Service & handling margin, added to the full subtotal (items, access
  * fees, van, surcharges) once everything else has been calculated. The
  * higher rate applies beyond LONG_DISTANCE_THRESHOLD_MILES from our Milton
  * Keynes base, covering crew travel time and mileage on the wrapping side
  * of the job — there's no separate per-mile line item for that, distance
- * is reflected here instead. (Van travel has its own real fuel/driver
- * costing below, since that's a distinct cost the business actually pays.) */
+ * is reflected here instead. Van fuel is costed separately from the
+ * collection → destination → depot journey. */
 export const STANDARD_MARGIN_PCT = 0.2;
 export const LONG_DISTANCE_MARGIN_PCT = 0.3;
 export const LONG_DISTANCE_THRESHOLD_MILES = 40;
 
-// Van trip costing — editable assumptions.
+// Van fuel costing — editable assumptions.
 const DIESEL_PRICE_PER_LITRE = 1.9;
 const LITRES_PER_IMPERIAL_GALLON = 4.546092;
-const DRIVER_HOURLY_RATE = 25;
-const DRIVER_UNLOAD_HELP_FLAT = 60; // driver helps unload at the destination
-const AVERAGE_ROAD_SPEED_MPH = 35; // mixed A-road/urban driving assumption
 
 function wrapFactor(wrapTypes: WrapType[]): number {
   if (wrapTypes.length === 0) return 1;
@@ -196,24 +189,18 @@ export function estimateItemPrice(item: Pick<QuoteItem, "itemType" | "size" | "w
 interface VanTravelCosts {
   hireFee: number;
   fuelCost: number;
-  driverCost: number;
-  driveHours: number;
-  roundTripMiles: number;
+  journeyMiles: number;
 }
 
-/** Real fuel + driver cost for a van trip, from actual round-trip distance.
- * Fuel: (round-trip miles / van MPG) converted to litres × diesel price.
- * Driver: driving time (round-trip miles / average speed) × hourly rate,
- * plus a flat fee since the driver also helps unload at the destination. */
-function calculateVanTravelCosts(vanSize: VanSize, distanceMiles: number): VanTravelCosts {
+/** Fixed hire fee plus fuel for the van journey (collection → destination
+ * + destination → MK13 0BG). Fuel: (journey miles / van MPG) converted to
+ * litres × diesel price. */
+function calculateVanTravelCosts(vanSize: VanSize, journeyMiles: number): VanTravelCosts {
   const van = VAN_OPTIONS.find((v) => v.value === vanSize);
-  const roundTripMiles = distanceMiles * 2;
-  const hireFee = van ? round((van.hireFeeMin + van.hireFeeMax) / 2) : 0;
-  const fuelLitres = van && van.mpg > 0 ? (roundTripMiles / van.mpg) * LITRES_PER_IMPERIAL_GALLON : 0;
+  const hireFee = van?.hireFee ?? 0;
+  const fuelLitres = van && van.mpg > 0 ? (journeyMiles / van.mpg) * LITRES_PER_IMPERIAL_GALLON : 0;
   const fuelCost = round(fuelLitres * DIESEL_PRICE_PER_LITRE);
-  const driveHours = roundTripMiles / AVERAGE_ROAD_SPEED_MPH;
-  const driverCost = round(driveHours * DRIVER_HOURLY_RATE + DRIVER_UNLOAD_HELP_FLAT);
-  return { hireFee, fuelCost, driverCost, driveHours, roundTripMiles };
+  return { hireFee, fuelCost, journeyMiles };
 }
 
 function isWeekend(dateIso: string): boolean {
@@ -272,31 +259,21 @@ export function calculateQuote(
 
   if (schedule.vanSize !== "none") {
     const van = VAN_OPTIONS.find((v) => v.value === schedule.vanSize);
-    if (van && property.distanceMiles != null) {
-      const costs = calculateVanTravelCosts(schedule.vanSize, property.distanceMiles);
+    if (van) {
+      const journeyMiles = property.journeyMiles;
+      const costs = calculateVanTravelCosts(schedule.vanSize, journeyMiles ?? 0);
       lineItems.push({
         label: van.label,
         amount: costs.hireFee,
-        detail: `Estimated ${formatGBP(van.hireFeeMin)}–${formatGBP(van.hireFeeMax)} vehicle hire — hired from our transport partner and confirmed nearer your move date`,
+        detail: "Fixed vehicle hire — fuel is added separately from your journey",
       });
-      lineItems.push({
-        label: "Van fuel (round trip)",
-        amount: costs.fuelCost,
-        detail: `${costs.roundTripMiles.toFixed(0)} miles round trip from our Milton Keynes base, at ${formatGBP(DIESEL_PRICE_PER_LITRE)}/litre diesel`,
-      });
-      lineItems.push({
-        label: "Driver — travel & unloading help",
-        amount: costs.driverCost,
-        detail: `${formatGBP(DRIVER_HOURLY_RATE)}/hr for ~${costs.driveHours.toFixed(1)} hrs travel, plus ${formatGBP(DRIVER_UNLOAD_HELP_FLAT)} flat for helping unload at your address`,
-      });
-    } else if (van) {
-      // Distance unknown — fall back to a single rough estimate rather
-      // than blocking the quote; it's refined once the address is confirmed.
-      lineItems.push({
-        label: van.label,
-        amount: round((van.hireFeeMin + van.hireFeeMax) / 2 + 40),
-        detail: "Rough estimate including vehicle, fuel and driver — we'll confirm the exact cost once we have your full address",
-      });
+      if (journeyMiles != null) {
+        lineItems.push({
+          label: "Van fuel",
+          amount: costs.fuelCost,
+          detail: `${costs.journeyMiles.toFixed(0)} miles (collection to destination, then back to our MK13 0BG depot) at ${formatGBP(DIESEL_PRICE_PER_LITRE)}/litre diesel${property.journeyApproximate ? " — approximate" : ""}`,
+        });
+      }
     }
   }
 
@@ -331,15 +308,15 @@ export function calculateQuote(
   const allLineItems = [...lineItems, ...surcharges, marginLine];
   subtotal = round(allLineItems.reduce((sum, li) => sum + li.amount, 0));
 
-  const payNowTotal = round(subtotal * (1 - PAY_NOW_DISCOUNT_PCT));
-  const payOnDayTotal = subtotal;
+  const payNowTotal = subtotal;
+  const payOnDayTotal = round(subtotal + PAY_ON_DAY_SURCHARGE);
 
   return {
     lineItems: allLineItems,
     subtotal,
     payNowTotal,
     payOnDayTotal,
-    payNowDiscountPct: PAY_NOW_DISCOUNT_PCT,
+    payOnDaySurcharge: PAY_ON_DAY_SURCHARGE,
   };
 }
 

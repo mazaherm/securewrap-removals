@@ -1,7 +1,7 @@
 import { jsPDF } from "jspdf";
 import { getCatalogEntry } from "./itemCatalog";
 import { SIZE_OPTIONS, TIME_SLOTS, VAN_OPTIONS, WRAP_OPTIONS } from "./pricing";
-import type { ContactDetails, PropertyDetails, QuoteItem, ScheduleDetails } from "./types";
+import { destinationTypeLabel, type ContactDetails, type PropertyDetails, type QuoteItem, type ScheduleDetails } from "./types";
 
 const PAGE_MARGIN = 14;
 const PAGE_WIDTH = 210; // A4 mm
@@ -60,13 +60,17 @@ export function generateChecklistPdf(
 
   const infoLines = [
     `Customer: ${contact.fullName || "-"}   Phone: ${contact.phone || "-"}`,
-    `Address: ${[property.addressLine1, property.addressLine2, property.city, property.postcode]
+    `Collection: ${[property.addressLine1, property.addressLine2, property.city, property.postcode]
       .filter(Boolean)
       .join(", ") || "-"}`,
     `Property: ${property.propertyType === "flat" ? "Flat" : "House"}${
       property.propertyType === "flat" ? `, floor ${property.floors}, ${property.hasLift ? "lift available" : "no lift"}` : `, ${property.floors} floor(s)`
     }, ${property.rooms} room(s)`,
-    `Destination: ${property.destinationType === "storage_facility" ? "Storage facility" : "New home"}`,
+    `Destination (${destinationTypeLabel(property.destinationType)}): ${
+      [property.destinationAddressLine1, property.destinationAddressLine2, property.destinationCity, property.destinationPostcode]
+        .filter(Boolean)
+        .join(", ") || "-"
+    }`,
     `Move date: ${formatDate(schedule.date)}  —  ${
       TIME_SLOTS.find((t) => t.value === schedule.timeSlot)?.label ?? ""
     } (${TIME_SLOTS.find((t) => t.value === schedule.timeSlot)?.window ?? ""})`,

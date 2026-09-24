@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { CheckCircle2, Download, Phone } from "lucide-react";
+import { CheckCircle2, Download, ListChecks, Phone } from "lucide-react";
 import { generateChecklistPdf } from "@/lib/checklist";
 import { formatGBP } from "@/lib/pricing";
 import type {
@@ -20,6 +20,7 @@ export function Confirmation({
   property,
   schedule,
   amountDue,
+  quoteId,
 }: {
   booking: BookingConfirmation;
   items: QuoteItem[];
@@ -27,6 +28,7 @@ export function Confirmation({
   property: PropertyDetails;
   schedule: ScheduleDetails;
   amountDue: number;
+  quoteId: string | null;
 }) {
   const [downloaded, setDownloaded] = useState(false);
 
@@ -45,7 +47,9 @@ export function Confirmation({
       </h1>
       <p className="mt-2 text-sm text-ink-500">
         Booking reference <span className="font-semibold text-ink-800">{booking.bookingRef}</span>.
-        A confirmation has been sent to {contact.email || "your email"}.
+        {quoteId
+          ? ` A confirmation has been sent to ${contact.email || "your email"}.`
+          : " Keep this reference for your records."}
       </p>
 
       <div className="card mt-8 p-6 text-left">
@@ -63,6 +67,9 @@ export function Confirmation({
             <p className="text-xs text-ink-500">
               {property.addressLine1}
               {property.city ? `, ${property.city}` : ""}
+              {property.destinationAddressLine1
+                ? ` → ${property.destinationAddressLine1}${property.destinationCity ? `, ${property.destinationCity}` : ""}`
+                : ""}
             </p>
           </div>
           <div className="text-right">
@@ -78,13 +85,27 @@ export function Confirmation({
             Crew checklist ({items.length} item{items.length === 1 ? "" : "s"})
           </p>
           <p className="mt-1 text-xs leading-relaxed text-ink-500">
-            Download a printable checklist with a photo, wrap type and size
-            for every item. Your crew will tick each one off on the day.
+            {quoteId
+              ? "Check items off from your phone as they're wrapped — no printing needed. A PDF copy is there too if you'd like one."
+              : "Download a checklist with a photo, wrap type and size for every item, for the crew to tick off on the day."}
           </p>
-          <button type="button" onClick={handleDownload} className="btn-primary mt-4 w-full sm:w-auto">
-            <Download className="h-4 w-4" />
-            Download checklist (PDF)
-          </button>
+
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+            {quoteId && (
+              <Link href={`/checklist/${quoteId}`} className="btn-primary w-full sm:w-auto">
+                <ListChecks className="h-4 w-4" />
+                Open checklist
+              </Link>
+            )}
+            <button
+              type="button"
+              onClick={handleDownload}
+              className={quoteId ? "btn-outline w-full sm:w-auto" : "btn-primary w-full sm:w-auto"}
+            >
+              <Download className="h-4 w-4" />
+              Download checklist (PDF)
+            </button>
+          </div>
           {downloaded && (
             <p className="mt-2 text-xs text-brand-700">Checklist downloaded.</p>
           )}

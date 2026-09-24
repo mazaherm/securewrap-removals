@@ -75,7 +75,7 @@ export function StepQuote({
           ].join(" ")}
         >
           <span className="inline-block rounded-full bg-gold-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-gold-700">
-            Save {Math.round(breakdown.payNowDiscountPct * 100)}%
+            Save {formatGBP(breakdown.payOnDaySurcharge)}
           </span>
           <p className="mt-3 text-sm font-semibold text-ink-900">Pay now</p>
           <p className="mt-1 text-2xl font-semibold text-brand-700">
@@ -95,7 +95,7 @@ export function StepQuote({
           ].join(" ")}
         >
           <span className="inline-block rounded-full bg-ink-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-ink-500">
-            Standard
+            +{formatGBP(breakdown.payOnDaySurcharge)}
           </span>
           <p className="mt-3 text-sm font-semibold text-ink-900">Pay on the day</p>
           <p className="mt-1 text-2xl font-semibold text-ink-900">
@@ -121,8 +121,8 @@ export function StepQuote({
       <p className="mt-3 text-xs text-ink-400">
         This quote is an estimate based on the details provided and isn&rsquo;t a
         final invoice. No payment is taken until you confirm.
-        {property.distanceMiles == null &&
-          " We couldn't confirm the exact distance to your address, so this uses our standard local rate — the final price may be adjusted once we've confirmed it."}
+        {property.journeyMiles == null && schedule.vanSize !== "none" &&
+          " We couldn't confirm the journey between your addresses yet, so van fuel may be adjusted once both postcodes are confirmed."}
       </p>
     </div>
   );

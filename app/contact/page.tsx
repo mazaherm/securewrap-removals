@@ -53,8 +53,8 @@ export default function ContactPage() {
               </span>
               <div>
                 <p className="text-sm font-semibold text-ink-900">Depot</p>
-                <p className="text-sm text-ink-500">12 Silbury Boulevard, Milton Keynes, MK9 2AF</p>
-                <p className="mt-1 text-xs text-ink-400">Nationwide coverage — travel cost scales with distance from base</p>
+                <p className="text-sm text-ink-500">Milton Keynes, MK13 0BG</p>
+                <p className="mt-1 text-xs text-ink-400">Nationwide coverage — van fuel is based on your collection-to-destination journey, then back to our depot</p>
               </div>
             </li>
             <li className="flex items-start gap-3">
@@ -74,8 +74,8 @@ export default function ContactPage() {
           <h2 className="text-lg font-semibold text-ink-900">Get an instant quote instead</h2>
           <p className="mt-2 text-sm leading-relaxed text-ink-500">
             Upload photos of what needs wrapping, tell us about your move,
-            and get a price in minutes — with the option to pay now for a
-            lower rate or pay on the day.
+            and get a price in minutes - pay now to lock in the quote, or
+            pay on the day for £150 more.
           </p>
           <Link href="/quote" className="btn-primary mt-6">
             Start your quote

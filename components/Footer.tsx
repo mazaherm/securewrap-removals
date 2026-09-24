@@ -13,8 +13,8 @@ export function Footer() {
             <span className="text-sm font-semibold text-ink-900">SecureWrap Removals</span>
           </div>
           <p className="mt-4 text-sm leading-relaxed text-ink-500">
-            Professional packing and protection for your move or storage —
-            wrapped, boxed and ready to travel. Based in Milton Keynes,
+            Packing and moving specialists - including export packing if
+            you&rsquo;re relocating abroad. Based in Milton Keynes,
             covering the UK nationwide.
           </p>
         </div>
@@ -57,7 +57,7 @@ export function Footer() {
             </li>
             <li className="flex items-start gap-2">
               <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" />
-              <span>12 Silbury Boulevard, Milton Keynes, MK9 2AF</span>
+              <span>Milton Keynes, MK13 0BG</span>
             </li>
           </ul>
         </div>

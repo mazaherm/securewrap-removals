@@ -71,10 +71,8 @@ export function StepSchedule({
       <div className="mt-8">
         <p className="field-label">Do you need a van?</p>
         <p className="mb-3 text-xs text-ink-400">
-          The van itself is hired from our transport partner (shown as an
-          estimated range, confirmed nearer your move date) — fuel and
-          driver time are calculated separately in your quote, from the
-          real distance to your address.
+          Van hire is a fixed price. Fuel is added on your quote from the
+          journey: collection to destination, then back to our MK13 0BG depot.
         </p>
 
         {recommendedVan && recommendedVan.value !== "none" && schedule.vanSize !== recommendedVan.value && (
@@ -114,9 +112,9 @@ export function StepSchedule({
               )}
               <span className="flex items-center justify-between">
                 <span>{van.label}</span>
-                {van.hireFeeMax > 0 && (
+                {van.hireFee > 0 && (
                   <span className="text-xs font-semibold text-ink-500">
-                    {formatGBP(van.hireFeeMin)}–{formatGBP(van.hireFeeMax)} + fuel &amp; driver
+                    {formatGBP(van.hireFee)} + fuel
                   </span>
                 )}
               </span>

@@ -5,25 +5,25 @@ const POINTS = [
     icon: ShieldCheck,
     title: "Fully insured, every move",
     description:
-      "We carry goods-in-transit insurance and every crew member is DBS-checked, so your belongings — and your home — are covered from the moment we arrive.",
+      "We carry goods-in-transit insurance and every crew member is DBS-checked, so your belongings - and your home - are covered from the moment we arrive.",
   },
   {
     icon: Receipt,
     title: "See exactly what you're paying for",
     description:
-      "No lump-sum guesswork. Your quote breaks down every fee — wrapping, access, van, fuel and driver time — so there's nothing hidden and nothing to question later.",
+      "No lump-sum guesswork. Your quote breaks down every fee - packing, access, van hire and journey fuel - so there's nothing hidden and nothing to question later.",
   },
   {
     icon: ClipboardList,
     title: "A checklist, not a guess",
     description:
-      "Every item you upload becomes a line on a checklist the crew ticks off on the day, and you get a copy — so nothing gets missed or mixed up.",
+      "Every item you upload becomes a line on a checklist the crew ticks off on the day, and you get a copy - so nothing gets missed or mixed up.",
   },
   {
     icon: PhoneCall,
     title: "A real person, one call away",
     description:
-      "Not sure about your quote? Call us before you book — we'll talk it through rather than leaving you to accept a number on a screen.",
+      "Not sure about your quote? Call us before you book - we'll talk it through rather than leaving you to accept a number on a screen.",
   },
 ];
 

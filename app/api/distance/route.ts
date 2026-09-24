@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { milesFromBase } from "@/lib/distance";
+import { haversineMiles, milesFromBase, roundMiles } from "@/lib/distance";
+import { lookupPostcode } from "@/lib/postcodes";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -10,59 +11,50 @@ interface DistanceResponse {
   /** True when we only matched the outward part of the postcode (e.g.
    * "MK9"), so the distance is an area-level estimate, not exact. */
   approximate?: boolean;
-}
-
-// Free UK postcode lookup — no API key required. https://postcodes.io
-const POSTCODES_IO_URL = "https://api.postcodes.io/postcodes";
-const POSTCODES_IO_OUTCODE_URL = "https://api.postcodes.io/outcodes";
-
-async function lookupFullPostcode(postcode: string): Promise<{ lat: number; lon: number } | null> {
-  const response = await fetch(`${POSTCODES_IO_URL}/${encodeURIComponent(postcode)}`);
-  if (!response.ok) return null;
-  const data = await response.json();
-  const lat = data?.result?.latitude;
-  const lon = data?.result?.longitude;
-  if (typeof lat !== "number" || typeof lon !== "number") return null;
-  return { lat, lon };
-}
-
-/** Falls back to the outward code only (e.g. "MK9" from "MK9 2AF", or a
- * postcode typed without its inward half) — gives an area-level centroid
- * rather than failing outright when the full postcode isn't recognised. */
-async function lookupOutcode(postcode: string): Promise<{ lat: number; lon: number } | null> {
-  const outcode = postcode.trim().split(/\s+/)[0]?.toUpperCase();
-  if (!outcode) return null;
-  const response = await fetch(`${POSTCODES_IO_OUTCODE_URL}/${encodeURIComponent(outcode)}`);
-  if (!response.ok) return null;
-  const data = await response.json();
-  const lat = data?.result?.latitude;
-  const lon = data?.result?.longitude;
-  if (typeof lat !== "number" || typeof lon !== "number") return null;
-  return { lat, lon };
+  journeyMiles?: number;
+  pickupToDestination?: number;
+  destinationToBase?: number;
+  journeyApproximate?: boolean;
 }
 
 export async function GET(request: Request): Promise<Response> {
   const { searchParams } = new URL(request.url);
   const postcode = searchParams.get("postcode")?.trim();
+  const pickup = searchParams.get("pickup")?.trim() || postcode;
+  const destination = searchParams.get("destination")?.trim();
 
-  if (!postcode) {
+  if (!pickup) {
     return NextResponse.json<DistanceResponse>({ available: false }, { status: 400 });
   }
 
   try {
-    const exact = await lookupFullPostcode(postcode);
-    if (exact) {
-      const miles = Math.round(milesFromBase(exact.lat, exact.lon) * 10) / 10;
-      return NextResponse.json<DistanceResponse>({ available: true, miles });
+    const pickupLocation = await lookupPostcode(pickup);
+    if (!pickupLocation) {
+      return NextResponse.json<DistanceResponse>({ available: false });
     }
 
-    const approx = await lookupOutcode(postcode);
-    if (approx) {
-      const miles = Math.round(milesFromBase(approx.lat, approx.lon) * 10) / 10;
-      return NextResponse.json<DistanceResponse>({ available: true, miles, approximate: true });
+    const miles = roundMiles(milesFromBase(pickupLocation.lat, pickupLocation.lon));
+    const response: DistanceResponse = {
+      available: true,
+      miles,
+      approximate: pickupLocation.approximate,
+    };
+
+    if (destination) {
+      const destLocation = await lookupPostcode(destination);
+      if (destLocation) {
+        const pickupToDestination = roundMiles(
+          haversineMiles(pickupLocation.lat, pickupLocation.lon, destLocation.lat, destLocation.lon)
+        );
+        const destinationToBase = roundMiles(milesFromBase(destLocation.lat, destLocation.lon));
+        response.pickupToDestination = pickupToDestination;
+        response.destinationToBase = destinationToBase;
+        response.journeyMiles = roundMiles(pickupToDestination + destinationToBase);
+        response.journeyApproximate = pickupLocation.approximate || destLocation.approximate;
+      }
     }
 
-    return NextResponse.json<DistanceResponse>({ available: false });
+    return NextResponse.json<DistanceResponse>(response);
   } catch {
     return NextResponse.json<DistanceResponse>({ available: false });
   }

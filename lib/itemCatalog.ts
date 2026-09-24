@@ -56,7 +56,8 @@ export function isValidCatalogKey(key: string): boolean {
   return CATALOG_BY_KEY.has(key);
 }
 
-/** Lightweight keyword match used as a fallback when AI detection is unavailable. */
+/** Lightweight keyword match from the photo filename, used as a starting
+ * item type the customer can change on the protection step. */
 export function guessItemTypeFromText(text: string): string {
   const lower = text.toLowerCase();
   for (const entry of ITEM_CATALOG) {

@@ -1,11 +1,13 @@
-// Straight-line ("as the crow flies") distance from our depot, used in
-// lib/pricing.ts to apply a higher service rate for jobs a long way from
-// base (covering crew travel time). Real road distance will be somewhat
-// higher, but this is a reasonable estimate for that purpose.
+// Straight-line ("as the crow flies") distance helpers. Used in
+// lib/pricing.ts for the long-distance service rate and for van fuel
+// (collection → destination + destination → base). Real road distance
+// will be somewhat higher, but this is a reasonable estimate.
+
 export const BASE_LOCATION = {
   name: "Milton Keynes",
-  lat: 52.0406,
-  lon: -0.7594,
+  postcode: "MK13 0BG",
+  lat: 52.064303,
+  lon: -0.794398,
 };
 
 function toRadians(deg: number): number {
@@ -25,4 +27,15 @@ export function haversineMiles(lat1: number, lon1: number, lat2: number, lon2: n
 
 export function milesFromBase(lat: number, lon: number): number {
   return haversineMiles(BASE_LOCATION.lat, BASE_LOCATION.lon, lat, lon);
+}
+
+export function roundMiles(miles: number): number {
+  return Math.round(miles * 10) / 10;
+}
+
+/** Normalises a UK postcode to "OUTWARD INWARD" (e.g. "MK130BG" → "MK13 0BG"). */
+export function normalizeUkPostcode(postcode: string): string {
+  const compact = postcode.replace(/\s+/g, "").toUpperCase();
+  if (compact.length < 5) return compact;
+  return `${compact.slice(0, -3)} ${compact.slice(-3)}`;
 }

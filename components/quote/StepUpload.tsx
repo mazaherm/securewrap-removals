@@ -1,9 +1,8 @@
 "use client";
 
 import { useRef, useState, type Dispatch, type SetStateAction } from "react";
-import { Camera, ImagePlus, Sparkles, X } from "lucide-react";
+import { Camera, ImagePlus, X } from "lucide-react";
 import { guessItemTypeFromText } from "@/lib/itemCatalog";
-import { identifyItemPhoto } from "@/lib/quoteApi";
 import type { QuoteItem } from "@/lib/types";
 
 function readAsDataUrl(file: File): Promise<string> {
@@ -31,7 +30,6 @@ export function StepUpload({
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [identifyingIds, setIdentifyingIds] = useState<Set<string>>(new Set());
   const [isDragOver, setIsDragOver] = useState(false);
 
   async function handleFiles(fileList: FileList | null) {
@@ -51,7 +49,6 @@ export function StepUpload({
           wrapTypes: ["bubble"],
           size: "medium",
           itemType: guessItemTypeFromText(label),
-          detection: "fallback",
         });
       } catch {
         // Skip files that fail to read.
@@ -60,31 +57,6 @@ export function StepUpload({
     onChange((prev) => [...prev, ...newItems]);
     setIsLoading(false);
     if (inputRef.current) inputRef.current.value = "";
-
-    setIdentifyingIds((prev) => {
-      const next = new Set(prev);
-      newItems.forEach((item) => next.add(item.id));
-      return next;
-    });
-
-    newItems.forEach((item) => {
-      identifyItemPhoto(item.photoUrl).then((result) => {
-        if (result.available && result.itemType) {
-          onChange((prev) =>
-            prev.map((existing) =>
-              existing.id === item.id && existing.detection !== "manual"
-                ? { ...existing, itemType: result.itemType!, detection: "ai" }
-                : existing
-            )
-          );
-        }
-        setIdentifyingIds((prev) => {
-          const next = new Set(prev);
-          next.delete(item.id);
-          return next;
-        });
-      });
-    });
   }
 
   function updateLabel(id: string, label: string) {
@@ -99,8 +71,9 @@ export function StepUpload({
     <div>
       <h2 className="text-lg font-semibold text-ink-900">Upload your items</h2>
       <p className="mt-1.5 text-sm text-ink-500">
-        Add a photo for each item you need wrapped. You can use your camera
-        or choose from your photo library.
+        Add a photo for each item you need packed. You can use your camera
+        or choose from your photo library — you&rsquo;ll name each item and
+        choose protection on the next step.
       </p>
 
       <input
@@ -170,12 +143,6 @@ export function StepUpload({
                   >
                     <X className="h-4 w-4" />
                   </button>
-                  {identifyingIds.has(item.id) && (
-                    <span className="absolute bottom-1.5 left-1.5 flex items-center gap-1 rounded-full bg-ink-900/70 px-2 py-1 text-[10px] font-medium text-white">
-                      <Sparkles className="h-3 w-3 animate-pulse" />
-                      Identifying…
-                    </span>
-                  )}
                 </div>
                 <input
                   type="text"

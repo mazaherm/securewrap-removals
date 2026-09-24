@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { WRAP_OPTIONS, VAN_OPTIONS } from "@/lib/pricing";
+import { WRAP_OPTIONS, VAN_OPTIONS, formatGBP } from "@/lib/pricing";
 import { CallToAction } from "@/components/CallToAction";
 
 export const metadata: Metadata = {
   title: "Services | SecureWrap Removals",
   description:
-    "Wrapping options, van hire and packing services offered by SecureWrap Removals.",
+    "Packing, moving, export packing and van hire from SecureWrap Removals.",
 };
 
 export default function ServicesPage() {
@@ -16,14 +16,16 @@ export default function ServicesPage() {
         <div className="container-page">
           <span className="section-eyebrow">Services</span>
           <h1 className="mt-2 text-3xl font-semibold tracking-tight text-ink-900 sm:text-4xl">
-            Wrapping, packing and transport for every kind of move
+            Packing, moving and specialist export packing
           </h1>
           <p className="mt-3 max-w-2xl text-ink-500">
-            Choose exactly the level of protection each item needs. Prices
-            are calculated automatically from what you select in the quote
-            tool. We&rsquo;re based in Milton Keynes and travel nationwide —
-            jobs more than 40 miles from our base carry a slightly higher
-            service rate to cover crew travel time.
+            We&rsquo;re a packing and moving service. Choose the protection
+            each item needs — and if you&rsquo;re relocating overseas, we
+            specialise in packing for export. Prices are calculated from
+            what you select in the quote tool. We&rsquo;re based in Milton
+            Keynes (MK13 0BG) and travel nationwide — jobs more than 40
+            miles from our base carry a slightly higher service rate to
+            cover crew travel time.
           </p>
         </div>
       </section>
@@ -44,17 +46,29 @@ export default function ServicesPage() {
         </div>
       </section>
 
+      <section className="border-t border-ink-100 py-16">
+        <div className="container-page">
+          <h2 className="text-xl font-semibold text-ink-900">Export packing</h2>
+          <p className="mt-2 max-w-2xl text-sm text-ink-500">
+            If you&rsquo;re moving abroad, this is our specialism. We pack
+            and protect belongings to export standard so they travel safely
+            — then, if you need it, we can take them to a UK freight depot,
+            port or packing warehouse. Overseas shipping itself is arranged
+            separately; tell us you&rsquo;re moving abroad in the quote and
+            we&rsquo;ll take it from there.
+          </p>
+        </div>
+      </section>
+
       <section className="border-t border-ink-100 bg-ink-50/60 py-16">
         <div className="container-page">
           <h2 className="text-xl font-semibold text-ink-900">Van hire</h2>
           <p className="mt-2 max-w-2xl text-sm text-ink-500">
-            Van hire is priced in three parts, worked out from your actual
-            address: an estimated vehicle hire fee, real round-trip fuel
-            cost, and driver time (including help unloading at your door).
-            We hire vans from a trusted transport partner and confirm the
-            exact figure nearer your move date — and we&rsquo;ll suggest a
-            size based on what you&rsquo;re moving, so you&rsquo;re never
-            paying for more van than you need.
+            Van hire is a fixed price. Fuel is added from your actual
+            journey: collection address to destination, then back to our
+            MK13 0BG depot. We&rsquo;ll suggest a size based on what
+            you&rsquo;re moving, so you&rsquo;re never paying for more van
+            than you need.
           </p>
           <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-3">
             {VAN_OPTIONS.filter((v) => v.value !== "none").map((van) => (
@@ -64,7 +78,7 @@ export default function ServicesPage() {
                   {van.description}
                 </p>
                 <p className="mt-4 text-sm font-semibold text-brand-700">
-                  £{van.hireFeeMin.toFixed(2)} – £{van.hireFeeMax.toFixed(2)} (est. hire, plus fuel &amp; driver)
+                  {formatGBP(van.hireFee)} + fuel
                 </p>
               </div>
             ))}

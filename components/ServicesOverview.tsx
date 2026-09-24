@@ -1,17 +1,17 @@
-import { Archive, Boxes, Sofa, Truck } from "lucide-react";
+import { Archive, Boxes, Globe, Truck } from "lucide-react";
 
 const SERVICES = [
   {
-    icon: Sofa,
-    title: "Furniture wrapping",
+    icon: Boxes,
+    title: "Packing & wrapping",
     description:
-      "Sofas, wardrobes, tables and beds wrapped in quilted furniture blankets or shrink wrap to prevent scuffs and moisture damage.",
+      "Furniture, boxes and fragile items packed and protected for the journey - whether that's across town or into storage.",
   },
   {
-    icon: Boxes,
-    title: "Boxing & bubble wrap",
+    icon: Globe,
+    title: "Export packing",
     description:
-      "Crockery, electronics and fragile items individually bubble-wrapped and boxed with void-fill for a secure fit.",
+      "Specialist packing for customers moving abroad: export-grade wrapping, boxing and preparation so belongings travel safely overseas.",
   },
   {
     icon: Archive,
@@ -21,9 +21,9 @@ const SERVICES = [
   },
   {
     icon: Truck,
-    title: "Van hire & driver",
+    title: "Moving & van hire",
     description:
-      "Need transport too? Add a van sized to your move — hire, fuel and a driver are all included in one price.",
+      "Need transport too? Small, medium or large van at a fixed hire price - fuel is added from your collection-to-destination journey.",
   },
 ];
 
@@ -34,12 +34,12 @@ export function ServicesOverview() {
         <div className="max-w-2xl">
           <span className="section-eyebrow">What we do</span>
           <h2 className="mt-2 text-3xl font-semibold tracking-tight text-ink-900">
-            Protection built around what you&rsquo;re moving
+            Packing and moving, with export packing as our specialism
           </h2>
           <p className="mt-3 text-ink-500">
-            Every item is wrapped to match its size, weight and fragility —
-            so nothing arrives at your new home or storage unit with a
-            scratch.
+            We&rsquo;re a packing and moving company first. If you&rsquo;re
+            relocating overseas, we specialise in packing for export so
+            everything is protected for a longer journey.
           </p>
         </div>
 

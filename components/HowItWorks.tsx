@@ -2,17 +2,17 @@ const STEPS = [
   {
     number: "01",
     title: "Upload photos",
-    description: "Add a photo of each item you need wrapped — furniture, appliances, boxes and more.",
+    description: "Add a photo of each item you need wrapped - furniture, appliances, boxes and more.",
   },
   {
     number: "02",
     title: "Choose protection",
-    description: "Pick the wrap type and size for every item, based on what it is and how fragile it is.",
+    description: "Tell us what each item is, then pick the wrap type and size based on how fragile it is.",
   },
   {
     number: "03",
     title: "Set your move",
-    description: "Tell us your address, property details, moving date and whether you need a van.",
+    description: "Tell us your collection and destination addresses, moving date and whether you need a van.",
   },
   {
     number: "04",
