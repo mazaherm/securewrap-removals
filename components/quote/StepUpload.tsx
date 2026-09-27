@@ -47,7 +47,7 @@ export function StepUpload({
           photoUrl: dataUrl,
           label,
           wrapTypes: ["bubble"],
-          size: "medium",
+          size: "large",
           itemType: guessItemTypeFromText(label),
         });
       } catch {

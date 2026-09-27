@@ -1,3 +1,4 @@
+import pricesData from "@/data/prices.json";
 import { getCatalogEntry } from "./itemCatalog";
 import type {
   ItemSize,
@@ -12,64 +13,29 @@ import type {
 } from "./types";
 
 // ---------------------------------------------------------------------------
-// Reference data shown in the UI. Prices are indicative and intended to be
-// wired up to real rate cards / a pricing service later.
+// Reference data shown in the UI, read from data/prices.json — that's the
+// one place to edit rates. Cast from the JSON's inferred `string` fields to
+// our literal union types below, since we own the file and its `value`
+// fields are trusted to match WrapType/ItemSize/VanSize. (JSON can't
+// express Infinity, so the top van tier's `recommendedUpTo: null` is
+// converted to Infinity here.)
 // ---------------------------------------------------------------------------
 
-export const WRAP_OPTIONS: {
+export interface WrapOption {
   value: WrapType;
   label: string;
   description: string;
   factor: number;
-}[] = [
-  {
-    value: "bubble",
-    label: "Bubble wrap",
-    description: "Cushioned protection for fragile and delicate items.",
-    factor: 1,
-  },
-  {
-    value: "paper",
-    label: "Packing paper",
-    description: "Lightweight protection for crockery, glassware and decor.",
-    factor: 0.8,
-  },
-  {
-    value: "blanket",
-    label: "Furniture blanket",
-    description: "Heavy-duty quilted covers for large furniture pieces.",
-    factor: 1.3,
-  },
-  {
-    value: "shrink",
-    label: "Shrink wrap",
-    description: "Weatherproof, secure wrap for sofas, mattresses and boxed sets.",
-    factor: 1.15,
-  },
-  {
-    value: "box",
-    label: "Cardboard box",
-    description: "Boxed for stacking and extra rigidity — combine with another wrap for fragile contents.",
-    factor: 0.9,
-  },
-];
+}
 
-// Size adjusts the item type's catalog base price (lib/itemCatalog.ts) up or
-// down, rather than setting a price on its own.
-export const SIZE_OPTIONS: {
+export interface SizeOption {
   value: ItemSize;
   label: string;
   description: string;
   multiplier: number;
-}[] = [
-  { value: "small", label: "Small", description: "Smaller / lighter than typical for this item", multiplier: 0.7 },
-  { value: "medium", label: "Medium", description: "Typical size for this item", multiplier: 1 },
-  { value: "large", label: "Large", description: "Larger / bulkier than typical for this item", multiplier: 1.4 },
-];
+}
 
-// Fixed van hire (vehicle only). Fuel is added separately from the
-// journey: collection → destination + destination → our MK13 0BG depot.
-export const VAN_OPTIONS: {
+export interface VanOption {
   value: VanSize;
   label: string;
   description: string;
@@ -77,40 +43,19 @@ export const VAN_OPTIONS: {
   hireFee: number;
   /** Imperial MPG (diesel), used to estimate journey fuel cost. */
   mpg: number;
-}[] = [
-  {
-    value: "none",
-    label: "No van needed",
-    description: "I'll arrange my own transport",
-    recommendedUpTo: 0,
-    hireFee: 0,
-    mpg: 0,
-  },
-  {
-    value: "small",
-    label: "Small van",
-    description: "Short wheelbase — a few items or boxes, studio/1-bed",
-    recommendedUpTo: 8,
-    hireFee: 150,
-    mpg: 38,
-  },
-  {
-    value: "medium",
-    label: "Medium van (LWB)",
-    description: "2 to 3 bedroom home's worth of furniture and boxes",
-    recommendedUpTo: 20,
-    hireFee: 200,
-    mpg: 30,
-  },
-  {
-    value: "large",
-    label: "Luton van + tail lift",
-    description: "3+ bedroom home, full house move or bulky furniture",
-    recommendedUpTo: Infinity,
-    hireFee: 250,
-    mpg: 22,
-  },
-];
+}
+
+export const WRAP_OPTIONS = pricesData.wrapTypes as WrapOption[];
+
+// Size adjusts the item type's catalog base price (lib/itemCatalog.ts) up or
+// down, rather than setting a price on its own.
+export const SIZE_OPTIONS = pricesData.sizes as SizeOption[];
+
+// Fixed van hire (vehicle only). Fuel is added separately from the
+// journey: collection → destination + destination → our MK13 0BG depot.
+export const VAN_OPTIONS: VanOption[] = (pricesData.vans as Array<Omit<VanOption, "recommendedUpTo"> & { recommendedUpTo: number | null }>).map(
+  (van) => ({ ...van, recommendedUpTo: van.recommendedUpTo ?? Infinity })
+);
 
 // Rough load contribution per item, used only to suggest a van size —
 // not for pricing. Small ≈ a box or side table, large ≈ a sofa/wardrobe.
@@ -140,30 +85,27 @@ export const TIME_SLOTS: { value: TimeSlot; label: string; window: string }[] = 
 // Pricing engine
 // ---------------------------------------------------------------------------
 
-const CALLOUT_FEE = 39;
-const EXTRA_FLOOR_FEE = 9; // per floor beyond the first, when no lift is available
-const EXTRA_ROOM_THRESHOLD = 2;
-const EXTRA_ROOM_FEE = 12; // per room beyond the threshold, for crew time
-const WEEKEND_SURCHARGE_PCT = 0.1;
-const EVENING_SURCHARGE_PCT = 0.08;
+const CALLOUT_FEE = pricesData.fees.callout;
+/** Charged when the customer brings their own van, for loading their items into it. */
+export const OWN_VAN_LOADING_FEE = pricesData.fees.ownVanLoading;
+const WEEKEND_SURCHARGE_PCT = pricesData.fees.weekendSurchargePct;
+const EVENING_SURCHARGE_PCT = pricesData.fees.eveningSurchargePct;
 /** Extra charged when the customer pays the crew on the day instead of
  * settling upfront. Pay-now is the quoted price; pay-on-the-day is this
  * amount higher, so booking in advance is always the cheaper option. */
-export const PAY_ON_DAY_SURCHARGE = 150;
-/** Service & handling margin, added to the full subtotal (items, access
- * fees, van, surcharges) once everything else has been calculated. The
- * higher rate applies beyond LONG_DISTANCE_THRESHOLD_MILES from our Milton
- * Keynes base, covering crew travel time and mileage on the wrapping side
- * of the job — there's no separate per-mile line item for that, distance
- * is reflected here instead. Van fuel is costed separately from the
- * collection → destination → depot journey. */
-export const STANDARD_MARGIN_PCT = 0.2;
-export const LONG_DISTANCE_MARGIN_PCT = 0.3;
-export const LONG_DISTANCE_THRESHOLD_MILES = 40;
+export const PAY_ON_DAY_SURCHARGE = pricesData.fees.payOnDaySurcharge;
+/** Service & handling margin, added once wrapping, callout and van costs
+ * are totalled. Floors, stairs and extra rooms are covered by this margin
+ * rather than shown as their own charges. The higher rate applies beyond
+ * LONG_DISTANCE_THRESHOLD_MILES from our Milton Keynes base. Van fuel is
+ * costed separately from the collection → destination → depot journey. */
+export const STANDARD_MARGIN_PCT = pricesData.fees.standardMarginPct;
+export const LONG_DISTANCE_MARGIN_PCT = pricesData.fees.longDistanceMarginPct;
+export const LONG_DISTANCE_THRESHOLD_MILES = pricesData.fees.longDistanceThresholdMiles;
 
 // Van fuel costing — editable assumptions.
-const DIESEL_PRICE_PER_LITRE = 1.9;
-const LITRES_PER_IMPERIAL_GALLON = 4.546092;
+const DIESEL_PRICE_PER_LITRE = pricesData.fees.dieselPricePerLitre;
+const LITRES_PER_IMPERIAL_GALLON = 4.546092; // physical unit conversion, not a rate — stays fixed
 
 function wrapFactor(wrapTypes: WrapType[]): number {
   if (wrapTypes.length === 0) return 1;
@@ -232,32 +174,13 @@ export function calculateQuote(
     });
   }
 
-  if (property.propertyType === "flat" && !property.hasLift && property.floors > 0) {
-    const floorFee = property.floors * EXTRA_FLOOR_FEE;
+  if (schedule.vanSize === "none") {
     lineItems.push({
-      label: `Stairs access (floor ${property.floors}, no lift)`,
-      amount: floorFee,
-      detail: "Additional crew time to carry items up/down stairs",
+      label: "Loading into your van",
+      amount: OWN_VAN_LOADING_FEE,
+      detail: "We'll load your items into the van you arrange",
     });
-  } else if (property.propertyType === "house" && property.floors > 1) {
-    const floorFee = (property.floors - 1) * EXTRA_FLOOR_FEE;
-    lineItems.push({
-      label: `Multi-storey access (${property.floors} floors)`,
-      amount: floorFee,
-      detail: "Additional crew time moving between floors",
-    });
-  }
-
-  if (property.rooms > EXTRA_ROOM_THRESHOLD) {
-    const extraRooms = property.rooms - EXTRA_ROOM_THRESHOLD;
-    lineItems.push({
-      label: `Additional rooms (${property.rooms} total)`,
-      amount: extraRooms * EXTRA_ROOM_FEE,
-      detail: "Extra crew time for larger properties",
-    });
-  }
-
-  if (schedule.vanSize !== "none") {
+  } else {
     const van = VAN_OPTIONS.find((v) => v.value === schedule.vanSize);
     if (van) {
       const journeyMiles = property.journeyMiles;
@@ -265,7 +188,7 @@ export function calculateQuote(
       lineItems.push({
         label: van.label,
         amount: costs.hireFee,
-        detail: "Fixed vehicle hire — fuel is added separately from your journey",
+        detail: "Loading and unloading included. Fuel is added separately from your journey",
       });
       if (journeyMiles != null) {
         lineItems.push({

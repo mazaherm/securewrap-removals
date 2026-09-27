@@ -9,9 +9,10 @@ import { StepProperty } from "./StepProperty";
 import { StepSchedule } from "./StepSchedule";
 import { StepQuote } from "./StepQuote";
 import { Confirmation } from "./Confirmation";
+import { isValidCatalogKey } from "@/lib/itemCatalog";
 import { calculateQuote } from "@/lib/pricing";
 import { makeBookingRef } from "@/lib/bookingRef";
-import { acceptPersistedQuote, createPersistedQuote } from "@/lib/quoteApi";
+import { acceptPersistedQuote, createPersistedQuote, sendReceiptFallback } from "@/lib/quoteApi";
 import type {
   BookingConfirmation,
   ContactDetails,
@@ -83,7 +84,7 @@ export function QuoteWizard() {
       case "upload":
         return items.length > 0;
       case "wrapping":
-        return true;
+        return items.length > 0 && items.every((item) => isValidCatalogKey(item.itemType));
       case "property":
         return Boolean(
           contact.fullName.trim() &&
@@ -116,10 +117,27 @@ export function QuoteWizard() {
   }
 
   function handleAccept(paymentOption: PaymentOption) {
-    setBooking({ bookingRef: persisted?.bookingRef ?? makeBookingRef(), paymentOption });
+    const bookingRef = persisted?.bookingRef ?? makeBookingRef();
+    setBooking({ bookingRef, paymentOption });
     window.scrollTo({ top: 0, behavior: "smooth" });
     if (persisted) {
       acceptPersistedQuote(persisted.id, paymentOption);
+    } else if (contact.email.trim()) {
+      // No Supabase configured (or persistence failed) — still send a
+      // receipt directly, so the customer isn't left with no email at all.
+      const breakdown = calculateQuote(items, property, schedule);
+      const amount = paymentOption === "pay_now" ? breakdown.payNowTotal : breakdown.payOnDayTotal;
+      sendReceiptFallback({
+        bookingRef,
+        customerName: contact.fullName,
+        customerEmail: contact.email,
+        customerPhone: contact.phone,
+        paymentOption,
+        amount,
+        items,
+        property,
+        schedule,
+      });
     }
   }
 

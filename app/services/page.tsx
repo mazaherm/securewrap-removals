@@ -64,11 +64,12 @@ export default function ServicesPage() {
         <div className="container-page">
           <h2 className="text-xl font-semibold text-ink-900">Van hire</h2>
           <p className="mt-2 max-w-2xl text-sm text-ink-500">
-            Van hire is a fixed price. Fuel is added from your actual
-            journey: collection address to destination, then back to our
-            MK13 0BG depot. We&rsquo;ll suggest a size based on what
-            you&rsquo;re moving, so you&rsquo;re never paying for more van
-            than you need.
+            Van hire is a fixed price and includes loading and unloading.
+            Fuel is added from your actual journey: collection address to
+            destination, then back to our MK13 0BG depot. We&rsquo;ll suggest
+            a size based on what you&rsquo;re moving, so you&rsquo;re never
+            paying for more van than you need. If you bring your own van,
+            there&rsquo;s a small fee to load your items into it.
           </p>
           <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-3">
             {VAN_OPTIONS.filter((v) => v.value !== "none").map((van) => (
@@ -78,7 +79,7 @@ export default function ServicesPage() {
                   {van.description}
                 </p>
                 <p className="mt-4 text-sm font-semibold text-brand-700">
-                  {formatGBP(van.hireFee)} + fuel
+                  {formatGBP(van.hireFee)} + fuel, loading and unloading included
                 </p>
               </div>
             ))}

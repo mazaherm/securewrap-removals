@@ -112,6 +112,19 @@ export function Confirmation({
         </div>
       </div>
 
+      <div className="card mt-6 p-6 text-left">
+        <p className="text-sm font-semibold text-ink-900">View this booking later</p>
+        <p className="mt-1 text-sm leading-relaxed text-ink-500">
+          No account needed. Open My booking, enter reference{" "}
+          <span className="font-semibold text-ink-800">{booking.bookingRef}</span> and the postcode of
+          the home you&rsquo;re moving from. You can check the details any time, and ask us to add or
+          remove items.
+        </p>
+        <Link href="/booking" className="btn-outline mt-4">
+          View my booking
+        </Link>
+      </div>
+
       <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
         <Link href="/" className="btn-outline w-full sm:w-auto">
           Back to home

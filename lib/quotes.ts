@@ -252,6 +252,34 @@ export async function getQuoteById(id: string): Promise<QuoteRecord | null> {
   return mapRowToRecord(data);
 }
 
+function compactPostcode(postcode: string): string {
+  return postcode.replace(/\s+/g, "").toUpperCase();
+}
+
+export async function getQuoteByBookingRef(bookingRef: string): Promise<QuoteRecord | null> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return null;
+  const ref = bookingRef.trim().toUpperCase();
+  if (!ref) return null;
+  const { data, error } = await supabase.from("quotes").select().eq("booking_ref", ref).maybeSingle();
+  if (error || !data) return null;
+  return mapRowToRecord(data);
+}
+
+/** Accepted booking whose home postcode matches. Same null for a missing
+ * ref, a wrong postcode, or a quote that was never accepted. */
+export async function findAcceptedBooking(
+  bookingRef: string,
+  postcode: string
+): Promise<QuoteRecord | null> {
+  const supplied = compactPostcode(postcode);
+  if (!supplied) return null;
+  const record = await getQuoteByBookingRef(bookingRef);
+  if (!record?.acceptedAt) return null;
+  if (compactPostcode(record.postcode) !== supplied) return null;
+  return record;
+}
+
 export async function acceptQuote(id: string, paymentOption: PaymentOption): Promise<QuoteRecord | null> {
   const supabase = getSupabaseAdmin();
   if (!supabase) return null;

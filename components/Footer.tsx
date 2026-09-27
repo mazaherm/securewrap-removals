@@ -33,6 +33,11 @@ export function Footer() {
               </Link>
             </li>
             <li>
+              <Link href="/booking" className="hover:text-brand-700">
+                My booking
+              </Link>
+            </li>
+            <li>
               <Link href="/contact" className="hover:text-brand-700">
                 Contact us
               </Link>

@@ -1,0 +1,179 @@
+{
+  "_comment": "Edit prices here — the quote tool, services page and receipts all read from this file. Restart `npm run dev` after changing it. basePrice = cost to wrap one of that item at medium size with bubble wrap. wrapTypes.factor and sizes.multiplier adjust that. vans.hireFee is fixed; fuel uses vans.mpg and fees.dieselPricePerLitre.",
+
+  "fees": {
+    "callout": 39,
+    "ownVanLoading": 25,
+    "weekendSurchargePct": 0.1,
+    "eveningSurchargePct": 0.08,
+    "payOnDaySurcharge": 150,
+    "standardMarginPct": 0.2,
+    "longDistanceMarginPct": 0.3,
+    "longDistanceThresholdMiles": 40,
+    "dieselPricePerLitre": 1.9
+  },
+
+  "wrapTypes": [
+    {
+      "value": "bubble",
+      "label": "Bubble wrap",
+      "description": "Cushioned protection for fragile and delicate items.",
+      "factor": 1
+    },
+    {
+      "value": "paper",
+      "label": "Packing paper",
+      "description": "Lightweight protection for crockery, glassware and decor.",
+      "factor": 0.8
+    },
+    {
+      "value": "blanket",
+      "label": "Furniture blanket",
+      "description": "Heavy-duty quilted covers for large furniture pieces.",
+      "factor": 1.3
+    },
+    {
+      "value": "shrink",
+      "label": "Shrink wrap",
+      "description": "Weatherproof, secure wrap for sofas, mattresses and boxed sets.",
+      "factor": 1.15
+    },
+    {
+      "value": "box",
+      "label": "Cardboard box",
+      "description": "Boxed for stacking and extra rigidity — combine with another wrap for fragile contents.",
+      "factor": 0.9
+    }
+  ],
+
+  "sizes": [
+    {
+      "value": "small",
+      "label": "Small",
+      "description": "Smaller / lighter than typical for this item",
+      "multiplier": 0.7
+    },
+    {
+      "value": "medium",
+      "label": "Medium",
+      "description": "Typical size for this item",
+      "multiplier": 1
+    },
+    {
+      "value": "large",
+      "label": "Large",
+      "description": "Larger / bulkier than typical for this item",
+      "multiplier": 1.4
+    }
+  ],
+
+  "vans": [
+    {
+      "value": "none",
+      "label": "No van needed",
+      "description": "I'll arrange my own transport. We'll load your items into it",
+      "recommendedUpTo": 0,
+      "hireFee": 0,
+      "mpg": 0
+    },
+    {
+      "value": "small",
+      "label": "Small van",
+      "description": "Short wheelbase — a few items or boxes, studio/1-bed",
+      "recommendedUpTo": 8,
+      "hireFee": 150,
+      "mpg": 38
+    },
+    {
+      "value": "medium",
+      "label": "Medium van (LWB)",
+      "description": "2 to 3 bedroom home's worth of furniture and boxes",
+      "recommendedUpTo": 20,
+      "hireFee": 200,
+      "mpg": 30
+    },
+    {
+      "value": "large",
+      "label": "Luton van + tail lift",
+      "description": "3+ bedroom home, full house move or bulky furniture",
+      "recommendedUpTo": null,
+      "hireFee": 250,
+      "mpg": 22
+    }
+  ],
+
+  "itemTypes": [
+    {
+      "key": "tv",
+      "label": "TV / Monitor",
+      "basePrice": 30,
+      "keywords": ["tv", "television", "monitor", "screen"]
+    },
+    {
+      "key": "sofa",
+      "label": "Sofa / Settee",
+      "basePrice": 45,
+      "keywords": ["sofa", "settee", "couch"]
+    },
+    {
+      "key": "armchair",
+      "label": "Armchair / Chair",
+      "basePrice": 15,
+      "keywords": ["chair", "armchair", "stool", "recliner"]
+    },
+    {
+      "key": "wardrobe",
+      "label": "Wardrobe / Cabinet",
+      "basePrice": 40,
+      "keywords": ["wardrobe", "cabinet", "closet"]
+    },
+    {
+      "key": "table",
+      "label": "Table (dining / coffee / desk)",
+      "basePrice": 25,
+      "keywords": ["table", "desk"]
+    },
+    {
+      "key": "bed",
+      "label": "Bed Frame / Mattress",
+      "basePrice": 35,
+      "keywords": ["bed", "mattress", "headboard"]
+    },
+    {
+      "key": "chest_of_drawers",
+      "label": "Chest of Drawers / Dresser",
+      "basePrice": 28,
+      "keywords": ["drawer", "dresser", "chest", "sideboard"]
+    },
+    {
+      "key": "fridge",
+      "label": "Fridge / Freezer",
+      "basePrice": 50,
+      "keywords": ["fridge", "freezer", "refrigerator"]
+    },
+    {
+      "key": "large_appliance",
+      "label": "Washing Machine / Large Appliance",
+      "basePrice": 35,
+      "keywords": ["washing", "dishwasher", "appliance", "oven", "cooker"]
+    },
+    {
+      "key": "mirror_art",
+      "label": "Mirror / Artwork / Picture Frame",
+      "basePrice": 18,
+      "keywords": ["mirror", "art", "picture", "frame", "painting"]
+    },
+    {
+      "key": "box",
+      "label": "Box of Items",
+      "basePrice": 8,
+      "keywords": ["box", "crate", "carton"]
+    },
+    {
+      "key": "lamp_decor",
+      "label": "Lamp / Small Decor",
+      "basePrice": 6,
+      "keywords": ["lamp", "vase", "decor", "ornament", "plant"]
+    }
+  ]
+}

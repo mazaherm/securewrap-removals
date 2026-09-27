@@ -1,7 +1,17 @@
 import { Resend } from "resend";
 import { getCatalogEntry } from "./itemCatalog";
 import { WRAP_OPTIONS, SIZE_OPTIONS, formatGBP } from "./pricing";
+import { buildReceiptPdf } from "./receiptPdf";
 import type { QuoteRecord } from "./quotes";
+import type {
+  DestinationType,
+  PaymentOption,
+  PropertyDetails,
+  QuoteItem,
+  ScheduleDetails,
+  TimeSlot,
+  VanSize,
+} from "./types";
 
 let cachedClient: Resend | null | undefined;
 
@@ -18,6 +28,7 @@ export function isEmailConfigured(): boolean {
 
 const FROM_ADDRESS = process.env.RESEND_FROM_EMAIL || "SecureWrap Removals <onboarding@resend.dev>";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+const BOOKINGS_EMAIL = process.env.PACKER_EMAIL || "bookings@securewrapremovals.co.uk";
 
 function wrapLabel(values: string[]): string {
   return values.map((v) => WRAP_OPTIONS.find((w) => w.value === v)?.label ?? v).join(" + ");
@@ -27,8 +38,15 @@ function sizeLabel(value: string): string {
   return SIZE_OPTIONS.find((s) => s.value === value)?.label ?? value;
 }
 
-function itemListHtml(quote: QuoteRecord): string {
-  return quote.items
+interface ItemLike {
+  label: string;
+  itemType: string;
+  wrapTypes: string[];
+  size: string;
+}
+
+function itemListHtml(items: ItemLike[]): string {
+  return items
     .map(
       (item) => `<tr>
         <td style="padding:6px 10px;border-bottom:1px solid #eee;">${escapeHtml(item.label)}</td>
@@ -60,6 +78,39 @@ function baseLayout(title: string, bodyHtml: string): string {
 </html>`;
 }
 
+/** Builds the receipt PDF bytes for a persisted quote — same shape used for
+ * both the acceptance and fallback receipt emails. */
+function receiptPdfForQuote(quote: QuoteRecord): Buffer {
+  const amount = quote.paymentOption === "pay_now" ? quote.payNowTotal : quote.payOnDayTotal;
+  return Buffer.from(
+    buildReceiptPdf({
+      bookingRef: quote.bookingRef,
+      customerName: quote.customerName,
+      customerEmail: quote.customerEmail,
+      customerPhone: quote.customerPhone,
+      paymentOption: quote.paymentOption ?? "pay_on_day",
+      amount,
+      items: quote.items,
+      property: {
+        addressLine1: quote.addressLine1,
+        addressLine2: quote.addressLine2,
+        city: quote.city,
+        postcode: quote.postcode,
+        destinationType: (quote.destinationType || "new_home") as DestinationType,
+        destinationAddressLine1: quote.destinationAddressLine1,
+        destinationAddressLine2: quote.destinationAddressLine2,
+        destinationCity: quote.destinationCity,
+        destinationPostcode: quote.destinationPostcode,
+      },
+      schedule: {
+        date: quote.moveDate,
+        timeSlot: quote.timeSlot as TimeSlot,
+        vanSize: quote.vanSize as VanSize,
+      },
+    })
+  );
+}
+
 /** Sent to the customer once they accept a quote. */
 export async function sendCustomerAcceptanceEmail(quote: QuoteRecord): Promise<void> {
   const client = getResendClient();
@@ -67,6 +118,7 @@ export async function sendCustomerAcceptanceEmail(quote: QuoteRecord): Promise<v
 
   const amount = quote.paymentOption === "pay_now" ? quote.payNowTotal : quote.payOnDayTotal;
   const checklistUrl = `${SITE_URL}/checklist/${quote.id}`;
+  const bookingUrl = `${SITE_URL}/booking`;
 
   await client.emails.send({
     from: FROM_ADDRESS,
@@ -79,9 +131,53 @@ export async function sendCustomerAcceptanceEmail(quote: QuoteRecord): Promise<v
        <strong>${quote.paymentOption === "pay_now" ? "Paid" : "Due on the day"}:</strong> ${formatGBP(amount)}</p>
        <p>You and our crew can check off items as they're wrapped from your phone — no printing needed:</p>
        <p style="margin:20px 0;"><a href="${checklistUrl}" style="background:#0f5c39;color:#fff;padding:10px 18px;border-radius:6px;text-decoration:none;font-weight:600;">Open your checklist</a></p>
+       <p>To view this booking later, or to ask us to add or remove items, open <a href="${bookingUrl}">My booking</a> and enter your booking reference plus the postcode of the home you're moving from. You don't need an account.</p>
+       <p>A PDF receipt with your full item list is attached.</p>
        <p style="color:#788279;font-size:13px;">Questions? Just reply to this email or call us.</p>`
     ),
+    attachments: [
+      {
+        filename: `securewrap-receipt-${quote.bookingRef}.pdf`,
+        content: receiptPdfForQuote(quote),
+      },
+    ],
   });
+}
+
+/** Emails the team and the customer when someone asks to change a booking. Returns false when email isn't configured. */
+export async function sendBookingChangeRequestEmails(quote: QuoteRecord, message: string): Promise<boolean> {
+  const client = getResendClient();
+  if (!client) return false;
+
+  const safeMessage = escapeHtml(message).replace(/\n/g, "<br/>");
+  const teamHtml = baseLayout(
+    "Booking change request",
+    `<p><strong>${escapeHtml(quote.customerName)}</strong> (${escapeHtml(quote.customerEmail)}) wants to change booking <strong>${escapeHtml(quote.bookingRef)}</strong>.</p>
+     <p style="margin:16px 0;">${safeMessage}</p>`
+  );
+  const customerHtml = baseLayout(
+    "We've got your change request",
+    `<p>Thanks ${escapeHtml(quote.customerName)}. We've received your request to change booking <strong>${escapeHtml(quote.bookingRef)}</strong> and will be in touch to confirm any additions or removals.</p>
+     <p style="margin:16px 0;">${safeMessage}</p>`
+  );
+
+  const results = await Promise.allSettled([
+    client.emails.send({
+      from: FROM_ADDRESS,
+      to: BOOKINGS_EMAIL,
+      replyTo: quote.customerEmail,
+      subject: `Change request — ${quote.bookingRef}`,
+      html: teamHtml,
+    }),
+    client.emails.send({
+      from: FROM_ADDRESS,
+      to: quote.customerEmail,
+      subject: `Change request received — ${quote.bookingRef}`,
+      html: customerHtml,
+    }),
+  ]);
+
+  return results.some((result) => result.status === "fulfilled");
 }
 
 /** Sent to the packer/business owner once a customer accepts, so there's
@@ -112,7 +208,7 @@ export async function sendPackerNotificationEmail(quote: QuoteRecord): Promise<v
            <th style="text-align:left;padding:6px 10px;border-bottom:2px solid #ddd;">Type</th>
            <th style="text-align:left;padding:6px 10px;border-bottom:2px solid #ddd;">Wrap / Size</th>
          </tr></thead>
-         <tbody>${itemListHtml(quote)}</tbody>
+         <tbody>${itemListHtml(quote.items)}</tbody>
        </table>
        <p style="margin:20px 0;"><a href="${checklistUrl}" style="background:#0f5c39;color:#fff;padding:10px 18px;border-radius:6px;text-decoration:none;font-weight:600;">Open checklist on your phone</a></p>`
     ),
@@ -140,4 +236,114 @@ export async function sendFollowUpEmail(quote: QuoteRecord): Promise<void> {
        <p style="color:#788279;font-size:13px;">Prices and availability can change, so if you'd like to lock this in, book soon — or call us if you have questions.</p>`
     ),
   });
+}
+
+export interface ReceiptEmailInput {
+  bookingRef: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  paymentOption: PaymentOption;
+  amount: number;
+  items: QuoteItem[];
+  property: PropertyDetails;
+  schedule: ScheduleDetails;
+}
+
+/** Fallback receipt sent directly from the client-submitted booking data,
+ * for when the quote wasn't persisted to Supabase (so there's no
+ * QuoteRecord / checklist page to build sendCustomerAcceptanceEmail from).
+ * Returns false when email isn't configured, so the caller can degrade
+ * without erroring. */
+export async function sendReceiptEmail(
+  input: ReceiptEmailInput,
+  checklistId?: string | null
+): Promise<boolean> {
+  const client = getResendClient();
+  if (!client) return false;
+
+  const addressLine = [input.property.addressLine1, input.property.addressLine2, input.property.city, input.property.postcode]
+    .filter(Boolean)
+    .join(", ");
+  const destinationLine = [
+    input.property.destinationAddressLine1,
+    input.property.destinationAddressLine2,
+    input.property.destinationCity,
+    input.property.destinationPostcode,
+  ]
+    .filter(Boolean)
+    .join(", ");
+
+  const checklistSection = checklistId
+    ? `<p>You and our crew can check off items as they're wrapped from your phone — no printing needed:</p>
+       <p style="margin:20px 0;"><a href="${SITE_URL}/checklist/${checklistId}" style="background:#0f5c39;color:#fff;padding:10px 18px;border-radius:6px;text-decoration:none;font-weight:600;">Open your checklist</a></p>`
+    : "";
+
+  const receiptPdf = Buffer.from(
+    buildReceiptPdf({
+      bookingRef: input.bookingRef,
+      customerName: input.customerName,
+      customerEmail: input.customerEmail,
+      customerPhone: input.customerPhone,
+      paymentOption: input.paymentOption,
+      amount: input.amount,
+      items: input.items,
+      property: input.property,
+      schedule: input.schedule,
+    })
+  );
+
+  const results = await Promise.allSettled([
+    client.emails.send({
+      from: FROM_ADDRESS,
+      to: input.customerEmail,
+      subject: `Booking confirmed — ${input.bookingRef}`,
+      html: baseLayout(
+        "Your booking is confirmed",
+        `<p>Thanks ${escapeHtml(input.customerName)}, your move on ${escapeHtml(input.schedule.date)} is booked.</p>
+         <p style="margin:16px 0;"><strong>Booking reference:</strong> ${escapeHtml(input.bookingRef)}<br/>
+         <strong>${input.paymentOption === "pay_now" ? "Paid" : "Due on the day"}:</strong> ${formatGBP(input.amount)}</p>
+         <p><strong>From:</strong> ${escapeHtml(addressLine || "—")}<br/>
+         <strong>To:</strong> ${escapeHtml(destinationLine || "—")}</p>
+         <table style="width:100%;border-collapse:collapse;margin-top:12px;font-size:14px;">
+           <thead><tr>
+             <th style="text-align:left;padding:6px 10px;border-bottom:2px solid #ddd;">Item</th>
+             <th style="text-align:left;padding:6px 10px;border-bottom:2px solid #ddd;">Type</th>
+             <th style="text-align:left;padding:6px 10px;border-bottom:2px solid #ddd;">Wrap / Size</th>
+           </tr></thead>
+           <tbody>${itemListHtml(input.items)}</tbody>
+         </table>
+         ${checklistSection}
+         <p>A PDF receipt with your full item list is attached.</p>
+         <p style="color:#788279;font-size:13px;">Keep your booking reference safe — quote it if you need to reach us. Just reply to this email or call us with any questions.</p>`
+      ),
+      attachments: [{ filename: `securewrap-receipt-${input.bookingRef}.pdf`, content: receiptPdf }],
+    }),
+    (async () => {
+      if (!process.env.PACKER_EMAIL) return;
+      await client.emails.send({
+        from: FROM_ADDRESS,
+        to: process.env.PACKER_EMAIL as string,
+        subject: `New job booked — ${input.bookingRef} (${input.schedule.date})`,
+        html: baseLayout(
+          "New job booked",
+          `<p><strong>${escapeHtml(input.customerName)}</strong> — ${escapeHtml(input.customerPhone || input.customerEmail)}</p>
+           <p><strong>From:</strong> ${escapeHtml(addressLine || "—")}<br/>
+           <strong>To:</strong> ${escapeHtml(destinationLine || "—")}</p>
+           <p><strong>Date:</strong> ${escapeHtml(input.schedule.date)} (${escapeHtml(input.schedule.timeSlot)})<br/>
+           <strong>Van:</strong> ${escapeHtml(input.schedule.vanSize)}</p>
+           <table style="width:100%;border-collapse:collapse;margin-top:12px;font-size:14px;">
+             <thead><tr>
+               <th style="text-align:left;padding:6px 10px;border-bottom:2px solid #ddd;">Item</th>
+               <th style="text-align:left;padding:6px 10px;border-bottom:2px solid #ddd;">Type</th>
+               <th style="text-align:left;padding:6px 10px;border-bottom:2px solid #ddd;">Wrap / Size</th>
+             </tr></thead>
+             <tbody>${itemListHtml(input.items)}</tbody>
+           </table>`
+        ),
+      });
+    })(),
+  ]);
+
+  return results.some((result) => result.status === "fulfilled");
 }

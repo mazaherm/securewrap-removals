@@ -134,3 +134,29 @@ export async function acceptPersistedQuote(quoteId: string, paymentOption: Payme
     // shouldn't block the confirmation screen.
   }
 }
+
+/** Sends a receipt directly from client-submitted data when the quote
+ * wasn't persisted to Supabase (no id to accept). Best-effort — a failed
+ * or skipped (Resend not configured) call never blocks the confirmation
+ * screen, since the booking has already succeeded client-side. */
+export async function sendReceiptFallback(payload: {
+  bookingRef: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  paymentOption: PaymentOption;
+  amount: number;
+  items: QuoteItem[];
+  property: PropertyDetails;
+  schedule: ScheduleDetails;
+}): Promise<void> {
+  try {
+    await fetch("/api/quotes/receipt", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+  } catch {
+    // Ignored — see note above.
+  }
+}
