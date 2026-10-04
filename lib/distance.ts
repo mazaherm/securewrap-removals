@@ -3,11 +3,13 @@
 // (collection → destination + destination → base). Real road distance
 // will be somewhat higher, but this is a reasonable estimate.
 
+import { site } from "./site";
+
 export const BASE_LOCATION = {
-  name: "Milton Keynes",
-  postcode: "MK13 0BG",
-  lat: 52.064303,
-  lon: -0.794398,
+  name: site.address.city,
+  postcode: site.address.postcode,
+  lat: site.address.lat,
+  lon: site.address.lon,
 };
 
 function toRadians(deg: number): number {

@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { BookingLookup } from "@/components/booking/BookingLookup";
+import { site } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: "My booking | SecureWrap Removals",
-  description: "Look up your SecureWrap booking with your reference and home postcode.",
+  title: `My booking | ${site.name}`,
+  description: `Look up your ${site.name} booking with your reference and home postcode.`,
 };
 
 export default function BookingPage() {

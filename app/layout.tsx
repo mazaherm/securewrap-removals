@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { site } from "@/lib/site";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -11,9 +12,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "SecureWrap Removals | Packing, Moving & Export Packing",
-  description:
-    "Packing and moving specialists based in Milton Keynes. We pack, wrap and move your belongings across the UK — and specialise in packing for export if you're moving abroad.",
+  title: `${site.name} | Packing, Moving & Export Packing`,
+  description: `Packing and moving specialists based in ${site.address.city}. We pack, wrap and move your belongings across the UK — and specialise in packing for export if you're moving abroad.`,
 };
 
 export default function RootLayout({

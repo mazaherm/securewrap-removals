@@ -1,13 +1,10 @@
-import { getCatalogEntry } from "./itemCatalog";
-import { SIZE_OPTIONS, TIME_SLOTS, VAN_OPTIONS, WRAP_OPTIONS } from "./pricing";
+import { TIME_SLOTS, VAN_OPTIONS } from "./pricing";
 import type { QuoteRecord } from "./quotes";
 import { destinationTypeLabel, type DestinationType } from "./types";
 
 export interface PublicBookingItem {
   label: string;
-  type: string;
-  wrap: string;
-  size: string;
+  notes: string;
 }
 
 export interface PublicBookingLine {
@@ -22,6 +19,7 @@ export interface PublicBooking {
   moveDate: string;
   timeSlot: string;
   van: string;
+  dismantleFurniture: boolean;
   pickup: string;
   destination: string;
   destinationType: string;
@@ -47,6 +45,7 @@ export function toPublicBooking(quote: QuoteRecord): PublicBooking {
     moveDate: quote.moveDate,
     timeSlot: slot ? `${slot.label} (${slot.window})` : quote.timeSlot,
     van: van?.label ?? quote.vanSize,
+    dismantleFurniture: quote.dismantleFurniture,
     pickup: joinAddress([quote.addressLine1, quote.addressLine2, quote.city, quote.postcode]),
     destination: joinAddress([
       quote.destinationAddressLine1,
@@ -57,11 +56,7 @@ export function toPublicBooking(quote: QuoteRecord): PublicBooking {
     destinationType: destinationTypeLabel(quote.destinationType as DestinationType),
     items: quote.items.map((item) => ({
       label: item.label,
-      type: getCatalogEntry(item.itemType).label,
-      wrap: item.wrapTypes
-        .map((value) => WRAP_OPTIONS.find((option) => option.value === value)?.label ?? value)
-        .join(" + "),
-      size: SIZE_OPTIONS.find((option) => option.value === item.size)?.label ?? item.size,
+      notes: item.notes ?? "",
     })),
     lineItems: quote.lineItems.map((line) => ({
       label: line.label,

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { CheckCircle2, Download, ListChecks, Phone } from "lucide-react";
 import { generateChecklistPdf } from "@/lib/checklist";
+import { phoneHref } from "@/lib/site";
 import { formatGBP } from "@/lib/pricing";
 import type {
   BookingConfirmation,
@@ -87,7 +88,7 @@ export function Confirmation({
           <p className="mt-1 text-xs leading-relaxed text-ink-500">
             {quoteId
               ? "Check items off from your phone as they're wrapped — no printing needed. A PDF copy is there too if you'd like one."
-              : "Download a checklist with a photo, wrap type and size for every item, for the crew to tick off on the day."}
+              : "Download a checklist with a photo and your note for every item, for the crew to tick off on the day."}
           </p>
 
           <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
@@ -129,7 +130,7 @@ export function Confirmation({
         <Link href="/" className="btn-outline w-full sm:w-auto">
           Back to home
         </Link>
-        <a href="tel:+441234567890" className="btn-ghost w-full sm:w-auto">
+        <a href={phoneHref} className="btn-ghost w-full sm:w-auto">
           <Phone className="h-4 w-4" />
           Questions? Call us
         </a>

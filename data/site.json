@@ -1,0 +1,20 @@
+{
+  "_comment": "Public name and contact details. Restart npm run dev after editing. address.lat and address.lon are the depot used for van fuel and the long-distance rate — update them if the depot moves.",
+  "name": "SecureWrap Removals",
+  "legalName": "SecureWrap Removals Ltd",
+  "phoneDisplay": "07397 807611",
+  "phoneTel": "+447397807611",
+  "email": "bookings@securewrapremovals.co.uk",
+  "address": {
+    "city": "Milton Keynes",
+    "postcode": "MK13 0BG",
+    "lat": 52.064303,
+    "lon": -0.794398
+  },
+  "companyNumber": "00000000",
+  "credentials": "Fully insured & DBS-checked crews",
+  "hours": {
+    "weekdays": "Mon – Fri: 8:30 – 19:00",
+    "weekend": "Sat – Sun: 8:30 – 17:00"
+  }
+}

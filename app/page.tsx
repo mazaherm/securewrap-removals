@@ -3,7 +3,6 @@ import { TrustBar } from "@/components/TrustBar";
 import { ServicesOverview } from "@/components/ServicesOverview";
 import { HowItWorks } from "@/components/HowItWorks";
 import { WhyTrustUs } from "@/components/WhyTrustUs";
-import { CallToAction } from "@/components/CallToAction";
 
 export default function HomePage() {
   return (
@@ -13,7 +12,6 @@ export default function HomePage() {
       <ServicesOverview />
       <HowItWorks />
       <WhyTrustUs />
-      <CallToAction />
     </>
   );
 }

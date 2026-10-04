@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from "react";
 import { Check, MapPin, Search } from "lucide-react";
 import { lookupAddressesByPostcode, type AddressLookupResult } from "@/lib/quoteApi";
+import { site } from "@/lib/site";
 
 type AddressLookupState = "idle" | "loading" | "results" | "no_results" | "unavailable";
 
@@ -26,7 +27,7 @@ export function AddressFields({
   onChange,
   onResolved,
   helper,
-  postcodePlaceholder = "MK13 0BG",
+  postcodePlaceholder = site.address.postcode,
 }: {
   idPrefix: string;
   value: AddressValue;

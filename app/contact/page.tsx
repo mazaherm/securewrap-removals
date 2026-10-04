@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Clock, Mail, MapPin, Phone } from "lucide-react";
+import { emailHref, phoneHref, site } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: "Contact | SecureWrap Removals",
-  description: "Get in touch with SecureWrap Removals for a quote or to discuss your move.",
+  title: `Contact | ${site.name}`,
+  description: `Get in touch with ${site.name} for a quote or to discuss your move.`,
 };
 
 export default function ContactPage() {
@@ -28,8 +29,8 @@ export default function ContactPage() {
               </span>
               <div>
                 <p className="text-sm font-semibold text-ink-900">Phone</p>
-                <a href="tel:+441234567890" className="text-sm text-ink-500 hover:text-brand-700">
-                  0123 456 7890
+                <a href={phoneHref} className="text-sm text-ink-500 hover:text-brand-700">
+                  {site.phoneDisplay}
                 </a>
               </div>
             </li>
@@ -40,31 +41,22 @@ export default function ContactPage() {
               <div>
                 <p className="text-sm font-semibold text-ink-900">Email</p>
                 <a
-                  href="mailto:bookings@securewrapremovals.co.uk"
+                  href={emailHref}
                   className="text-sm text-ink-500 hover:text-brand-700"
                 >
-                  bookings@securewrapremovals.co.uk
+                  {site.email}
                 </a>
               </div>
             </li>
-            <li className="flex items-start gap-3">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-brand-50">
-                <MapPin className="h-5 w-5 text-brand-700" />
-              </span>
-              <div>
-                <p className="text-sm font-semibold text-ink-900">Depot</p>
-                <p className="text-sm text-ink-500">Milton Keynes, MK13 0BG</p>
-                <p className="mt-1 text-xs text-ink-400">Nationwide coverage — van fuel is based on your collection-to-destination journey, then back to our depot</p>
-              </div>
-            </li>
+            
             <li className="flex items-start gap-3">
               <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-brand-50">
                 <Clock className="h-5 w-5 text-brand-700" />
               </span>
               <div>
                 <p className="text-sm font-semibold text-ink-900">Opening hours</p>
-                <p className="text-sm text-ink-500">Mon – Fri: 7:30 – 19:00</p>
-                <p className="text-sm text-ink-500">Sat – Sun: 8:00 – 17:00</p>
+                <p className="text-sm text-ink-500">{site.hours.weekdays}</p>
+                <p className="text-sm text-ink-500">{site.hours.weekend}</p>
               </div>
             </li>
           </ul>

@@ -21,6 +21,9 @@ yarn-error.log*
 .env*.local
 .env
 
+# Days closed from the admin calendar when Supabase isn't configured.
+/data/closed-dates.json
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

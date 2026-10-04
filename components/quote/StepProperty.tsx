@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { MapPin } from "lucide-react";
+import { site } from "@/lib/site";
 import { milesFromBase, roundMiles } from "@/lib/distance";
 import { LONG_DISTANCE_THRESHOLD_MILES } from "@/lib/pricing";
 import { getDistanceFromBase, getJourneyDistance } from "@/lib/quoteApi";
@@ -172,15 +173,15 @@ export function StepProperty({
           helper={
             <p className="mt-1.5 flex items-center gap-1.5 text-xs text-ink-400">
               <MapPin className="h-3.5 w-3.5 shrink-0" />
-              {distanceStatus === "loading" && "Checking distance from our Milton Keynes base…"}
+              {distanceStatus === "loading" && `Checking distance from our ${site.address.city} base…`}
               {distanceStatus === "done" && property.distanceMiles != null && (
                 property.distanceMiles <= LONG_DISTANCE_THRESHOLD_MILES
-                  ? `${property.distanceMiles.toFixed(1)} miles${property.distanceApproximate ? " (approx.)" : ""} from our Milton Keynes base`
-                  : `${property.distanceMiles.toFixed(1)} miles${property.distanceApproximate ? " (approx.)" : ""} from our Milton Keynes base — a higher service rate applies beyond ${LONG_DISTANCE_THRESHOLD_MILES} miles to cover crew travel time`
+                  ? `${property.distanceMiles.toFixed(1)} miles${property.distanceApproximate ? " (approx.)" : ""} from our ${site.address.city} base`
+                  : `${property.distanceMiles.toFixed(1)} miles${property.distanceApproximate ? " (approx.)" : ""} from our ${site.address.city} base — a higher service rate applies beyond ${LONG_DISTANCE_THRESHOLD_MILES} miles to cover crew travel time`
               )}
               {distanceStatus === "error" &&
                 "We couldn't recognise that postcode — you can still continue and we'll confirm the exact price once we have your full address"}
-              {distanceStatus === "idle" && "We're based in Milton Keynes (MK13 0BG) and cover the UK nationwide"}
+              {distanceStatus === "idle" && `We're based in ${site.address.city} (${site.address.postcode}) and cover the UK nationwide`}
             </p>
           }
         />
@@ -278,7 +279,7 @@ export function StepProperty({
       <p className="mt-1.5 text-sm text-ink-500">
         {property.destinationType === "abroad"
           ? "If you're moving abroad, enter the UK address we'll take the items to — for example a freight depot, port or packing warehouse. We'll discuss overseas shipping separately."
-          : "Where the items are being delivered. We use this to calculate van fuel: collection to here, then back to our MK13 0BG depot."}
+          : "Where the items are being delivered. We use this to calculate van fuel: collection to here, then back to our depot."}
       </p>
       <div className="mt-6">
         <AddressFields
@@ -308,7 +309,7 @@ export function StepProperty({
               <MapPin className="h-3.5 w-3.5 shrink-0" />
               {journeyStatus === "loading" && "Calculating the journey for van fuel…"}
               {journeyStatus === "done" && property.journeyMiles != null && (
-                `${property.journeyMiles.toFixed(1)} miles${property.journeyApproximate ? " (approx.)" : ""} for van fuel — collection to destination, then back to our MK13 0BG depot`
+                `${property.journeyMiles.toFixed(1)} miles${property.journeyApproximate ? " (approx.)" : ""} for van fuel — collection to destination, then back to our depot`
               )}
               {journeyStatus === "error" &&
                 "We couldn't calculate the journey yet — you can still continue and we'll confirm fuel once both addresses are set"}

@@ -4,10 +4,12 @@ import { AlertTriangle, CheckCircle2, Clock } from "lucide-react";
 import { listQuotes } from "@/lib/quotes";
 import { isSupabaseConfigured } from "@/lib/supabase";
 import { formatGBP } from "@/lib/pricing";
+import { AvailabilityCalendar } from "@/components/admin/AvailabilityCalendar";
 import { LogoutButton } from "@/components/admin/LogoutButton";
+import { site } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: "Admin | SecureWrap Removals",
+  title: `Admin | ${site.name}`,
 };
 
 export const dynamic = "force-dynamic";
@@ -53,6 +55,8 @@ export default async function AdminPage() {
         </div>
         <LogoutButton />
       </div>
+
+      <AvailabilityCalendar />
 
       {!configured && (
         <div className="mt-8 rounded-card border border-gold-200 bg-gold-50 p-5 text-sm text-ink-700">

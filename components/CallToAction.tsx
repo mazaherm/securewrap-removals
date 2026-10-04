@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { phoneHref, site } from "@/lib/site";
 
 export function CallToAction() {
   return (
@@ -18,8 +19,8 @@ export function CallToAction() {
             <Link href="/quote" className="btn-primary">
               Get your instant quote
             </Link>
-            <a href="tel:+441234567890" className="btn-outline">
-              Call 0123 456 7890
+            <a href={phoneHref} className="btn-outline">
+              Call {site.phoneDisplay}
             </a>
           </div>
         </div>

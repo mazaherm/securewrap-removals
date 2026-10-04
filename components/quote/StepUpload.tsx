@@ -2,7 +2,6 @@
 
 import { useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { Camera, ImagePlus, X } from "lucide-react";
-import { guessItemTypeFromText } from "@/lib/itemCatalog";
 import type { QuoteItem } from "@/lib/types";
 
 function readAsDataUrl(file: File): Promise<string> {
@@ -46,9 +45,7 @@ export function StepUpload({
           photoName: file.name,
           photoUrl: dataUrl,
           label,
-          wrapTypes: ["bubble"],
-          size: "large",
-          itemType: guessItemTypeFromText(label),
+          notes: "",
         });
       } catch {
         // Skip files that fail to read.
@@ -59,8 +56,8 @@ export function StepUpload({
     if (inputRef.current) inputRef.current.value = "";
   }
 
-  function updateLabel(id: string, label: string) {
-    onChange((prev) => prev.map((item) => (item.id === id ? { ...item, label } : item)));
+  function updateItem(id: string, patch: Partial<Pick<QuoteItem, "label" | "notes">>) {
+    onChange((prev) => prev.map((item) => (item.id === id ? { ...item, ...patch } : item)));
   }
 
   function removeItem(id: string) {
@@ -71,9 +68,9 @@ export function StepUpload({
     <div>
       <h2 className="text-lg font-semibold text-ink-900">Upload your items</h2>
       <p className="mt-1.5 text-sm text-ink-500">
-        Add a photo for each item you need packed. You can use your camera
-        or choose from your photo library — you&rsquo;ll name each item and
-        choose protection on the next step.
+        Add a photo for each item you need packed. Name it, and add a note
+        if the wrapping team should know something — for example that it is
+        fragile. We choose how each item is wrapped.
       </p>
 
       <input
@@ -125,10 +122,10 @@ export function StepUpload({
           <p className="text-sm font-medium text-ink-700">
             {items.length} item{items.length === 1 ? "" : "s"} added
           </p>
-          <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+          <div className="mt-4 space-y-4">
             {items.map((item) => (
-              <div key={item.id} className="group relative">
-                <div className="relative aspect-square overflow-hidden rounded-card border border-ink-100 bg-ink-50">
+              <div key={item.id} className="card flex flex-col gap-3 p-3 sm:flex-row sm:items-start">
+                <div className="relative h-28 w-full shrink-0 overflow-hidden rounded-md border border-ink-100 bg-ink-50 sm:h-24 sm:w-24">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={item.photoUrl}
@@ -144,13 +141,24 @@ export function StepUpload({
                     <X className="h-4 w-4" />
                   </button>
                 </div>
-                <input
-                  type="text"
-                  value={item.label}
-                  onChange={(e) => updateLabel(item.id, e.target.value)}
-                  placeholder="Item name"
-                  className="field-input mt-2 px-2.5 py-2 text-xs"
-                />
+                <div className="min-w-0 flex-1 space-y-2">
+                  <input
+                    type="text"
+                    value={item.label}
+                    onChange={(e) => updateItem(item.id, { label: e.target.value })}
+                    placeholder="Item name"
+                    aria-label="Item name"
+                    className="field-input px-2.5 py-2 text-sm"
+                  />
+                  <textarea
+                    value={item.notes}
+                    onChange={(e) => updateItem(item.id, { notes: e.target.value })}
+                    placeholder="Note for the wrapping team, e.g. fragile — please be careful"
+                    aria-label="Note for the wrapping team"
+                    rows={2}
+                    className="field-input px-2.5 py-2 text-sm"
+                  />
+                </div>
               </div>
             ))}
           </div>

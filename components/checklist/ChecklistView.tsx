@@ -2,17 +2,7 @@
 
 import { useState } from "react";
 import { Check } from "lucide-react";
-import { getCatalogEntry } from "@/lib/itemCatalog";
-import { SIZE_OPTIONS, WRAP_OPTIONS } from "@/lib/pricing";
 import type { QuoteRecordItem } from "@/lib/quotes";
-
-function wrapLabel(values: string[]): string {
-  return values.map((v) => WRAP_OPTIONS.find((w) => w.value === v)?.label ?? v).join(" + ");
-}
-
-function sizeLabel(value: string): string {
-  return SIZE_OPTIONS.find((s) => s.value === value)?.label ?? value;
-}
 
 export function ChecklistView({
   quoteId,
@@ -93,11 +83,11 @@ export function ChecklistView({
                     isChecked ? "text-brand-800 line-through decoration-brand-400" : "text-ink-900",
                   ].join(" ")}
                 >
-                  {item.label || getCatalogEntry(item.itemType).label}
+                  {item.label || "Untitled item"}
                 </span>
-                <span className="block text-xs text-ink-500">
-                  {wrapLabel(item.wrapTypes)} · {sizeLabel(item.size)}
-                </span>
+                {item.notes?.trim() && (
+                  <span className="mt-0.5 block text-xs text-ink-500">{item.notes}</span>
+                )}
               </span>
             </button>
           );

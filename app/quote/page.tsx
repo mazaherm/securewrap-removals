@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { QuoteWizard } from "@/components/quote/QuoteWizard";
+import { site } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: "Get a quote | SecureWrap Removals",
+  title: `Get a quote | ${site.name}`,
   description:
     "Upload photos of your items, choose your wrapping, and get an instant quote for your move.",
 };

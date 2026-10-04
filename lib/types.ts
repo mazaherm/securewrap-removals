@@ -7,11 +7,8 @@ export interface QuoteItem {
   photoName: string;
   photoUrl: string;
   label: string;
-  /** One or more protection types for this item (e.g. bubble wrap + box) — always at least one. */
-  wrapTypes: WrapType[];
-  size: ItemSize;
-  /** Catalog key from lib/itemCatalog.ts, drives the wrapping base price. */
-  itemType: string;
+  /** Handling note for the wrapping team, written by the customer. */
+  notes: string;
 }
 
 export interface ContactDetails {
@@ -62,12 +59,14 @@ export interface PropertyDetails {
 
 export type VanSize = "none" | "small" | "medium" | "large";
 
-export type TimeSlot = "morning" | "afternoon" | "evening";
+export type TimeSlot = "morning" | "afternoon";
 
 export interface ScheduleDetails {
   date: string; // ISO date, yyyy-mm-dd
   timeSlot: TimeSlot;
   vanSize: VanSize;
+  /** Take furniture apart before the move and put it back together after. */
+  dismantleFurniture: boolean;
 }
 
 export interface QuoteRequest {

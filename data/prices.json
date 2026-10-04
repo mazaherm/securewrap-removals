@@ -1,11 +1,11 @@
 {
-  "_comment": "Edit prices here — the quote tool, services page and receipts all read from this file. Restart `npm run dev` after changing it. basePrice = cost to wrap one of that item at medium size with bubble wrap. wrapTypes.factor and sizes.multiplier adjust that. vans.hireFee is fixed; fuel uses vans.mpg and fees.dieselPricePerLitre.",
+  "_comment": "Edit prices here — the quote tool, services page and receipts all read from this file. Restart `npm run dev` after changing it. fees.perItem is charged for every uploaded item. vans.hireFee is fixed; fuel uses vans.mpg and fees.dieselPricePerLitre.",
 
   "fees": {
-    "callout": 39,
+    "perItem": 20,
     "ownVanLoading": 25,
+    "dismantleReassemble": 40,
     "weekendSurchargePct": 0.1,
-    "eveningSurchargePct": 0.08,
     "payOnDaySurcharge": 150,
     "standardMarginPct": 0.2,
     "longDistanceMarginPct": 0.3,

@@ -1,6 +1,6 @@
 import { jsPDF } from "jspdf";
-import { getCatalogEntry } from "./itemCatalog";
-import { SIZE_OPTIONS, TIME_SLOTS, VAN_OPTIONS, WRAP_OPTIONS } from "./pricing";
+import { TIME_SLOTS, VAN_OPTIONS } from "./pricing";
+import { site } from "./site";
 import { destinationTypeLabel, type ContactDetails, type PropertyDetails, type QuoteItem, type ScheduleDetails } from "./types";
 
 const PAGE_MARGIN = 14;
@@ -8,18 +8,6 @@ const PAGE_WIDTH = 210; // A4 mm
 const PAGE_HEIGHT = 297; // A4 mm
 const ROW_HEIGHT = 32;
 const THUMB_SIZE = 20;
-
-function wrapLabel(values: string[]) {
-  return values.map((value) => WRAP_OPTIONS.find((w) => w.value === value)?.label ?? value).join(" + ");
-}
-
-function itemTypeLabel(value: string) {
-  return getCatalogEntry(value).label;
-}
-
-function sizeLabel(value: string) {
-  return SIZE_OPTIONS.find((s) => s.value === value)?.label ?? value;
-}
 
 function formatDate(dateIso: string) {
   if (!dateIso) return "Not set";
@@ -33,7 +21,7 @@ function formatDate(dateIso: string) {
 
 /**
  * Generates a printable packing checklist for the crew: one row per item
- * with a tick box, thumbnail photo, and the wrap type/size selected online,
+ * with a tick box, thumbnail photo, and the customer's handling note,
  * so items can be confirmed on-site during the move.
  */
 export function generateChecklistPdf(
@@ -48,7 +36,7 @@ export function generateChecklistPdf(
 
   doc.setFontSize(16);
   doc.setFont("helvetica", "bold");
-  doc.text("SecureWrap Removals — Packing Checklist", PAGE_MARGIN, y);
+  doc.text(`${site.name} — Packing Checklist`, PAGE_MARGIN, y);
   y += 6;
 
   doc.setFontSize(10);
@@ -75,6 +63,7 @@ export function generateChecklistPdf(
       TIME_SLOTS.find((t) => t.value === schedule.timeSlot)?.label ?? ""
     } (${TIME_SLOTS.find((t) => t.value === schedule.timeSlot)?.window ?? ""})`,
     `Van: ${VAN_OPTIONS.find((v) => v.value === schedule.vanSize)?.label ?? "Not required"}`,
+    `Dismantle & reassemble: ${schedule.dismantleFurniture ? "Yes" : "No"}`,
   ];
 
   doc.setFontSize(10);
@@ -123,8 +112,11 @@ export function generateChecklistPdf(
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9.5);
     doc.setTextColor(90, 90, 90);
-    doc.text(`${itemTypeLabel(item.itemType)}`, textX, y + 9.5);
-    doc.text(`Wrap: ${wrapLabel(item.wrapTypes)}   Size: ${sizeLabel(item.size)}`, textX, y + 14.5);
+    const note = item.notes?.trim();
+    if (note) {
+      const lines = doc.splitTextToSize(`Note: ${note}`, PAGE_WIDTH - textX - PAGE_MARGIN);
+      doc.text(lines.slice(0, 3), textX, y + 9.5);
+    }
     doc.setTextColor(20, 20, 20);
 
     y += ROW_HEIGHT - 6;
@@ -138,11 +130,11 @@ export function generateChecklistPdf(
     doc.setFontSize(8);
     doc.setTextColor(150, 150, 150);
     doc.text(
-      `SecureWrap Removals · Generated for crew use · Page ${p} of ${pageCount}`,
+      `${site.name} · Generated for crew use · Page ${p} of ${pageCount}`,
       PAGE_MARGIN,
       PAGE_HEIGHT - 8
     );
   }
 
-  doc.save(`securewrap-checklist-${bookingRef}.pdf`);
+  doc.save(`${site.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}-checklist-${bookingRef}.pdf`);
 }

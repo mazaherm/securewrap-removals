@@ -7,9 +7,7 @@ const PHOTO_BUCKET = "item-photos";
 export interface QuoteRecordItem {
   id: string;
   label: string;
-  itemType: string;
-  wrapTypes: string[];
-  size: string;
+  notes: string;
   photoUrl: string;
 }
 
@@ -44,6 +42,7 @@ export interface QuoteRecord {
   moveDate: string;
   timeSlot: string;
   vanSize: string;
+  dismantleFurniture: boolean;
   items: QuoteRecordItem[];
   lineItems: QuoteLineItemRecord[];
   subtotal: number;
@@ -79,6 +78,7 @@ export interface CreateQuoteInput {
   moveDate: string;
   timeSlot: string;
   vanSize: string;
+  dismantleFurniture: boolean;
   items: QuoteRecordItem[]; // photoUrl may still be a data: URL here — uploaded during creation
   lineItems: QuoteLineItemRecord[];
   subtotal: number;
@@ -114,6 +114,7 @@ interface QuoteRow {
   move_date: string | null;
   time_slot: string | null;
   van_size: string | null;
+  dismantle_furniture: boolean | null;
   items: QuoteRecordItem[] | null;
   line_items: QuoteLineItemRecord[] | null;
   subtotal: number | null;
@@ -151,7 +152,13 @@ function mapRowToRecord(row: QuoteRow): QuoteRecord {
     moveDate: row.move_date ?? "",
     timeSlot: row.time_slot ?? "",
     vanSize: row.van_size ?? "",
-    items: row.items ?? [],
+    dismantleFurniture: Boolean(row.dismantle_furniture),
+    items: (row.items ?? []).map((item) => ({
+      id: item.id,
+      label: item.label,
+      notes: item.notes ?? "",
+      photoUrl: item.photoUrl,
+    })),
     lineItems: row.line_items ?? [],
     subtotal: Number(row.subtotal ?? 0),
     payNowTotal: Number(row.pay_now_total ?? 0),
@@ -224,6 +231,7 @@ export async function createQuote(input: CreateQuoteInput): Promise<QuoteRecord 
       move_date: input.moveDate || null,
       time_slot: input.timeSlot,
       van_size: input.vanSize,
+      dismantle_furniture: input.dismantleFurniture,
       items: input.items,
       line_items: input.lineItems,
       subtotal: input.subtotal,
@@ -299,6 +307,41 @@ export async function listQuotes(): Promise<QuoteRecord[]> {
   const { data, error } = await supabase.from("quotes").select().order("created_at", { ascending: false });
   if (error || !data) return [];
   return data.map(mapRowToRecord);
+}
+
+/** Accepted bookings on or after `fromDate` (yyyy-mm-dd). One job per day. */
+export async function listAcceptedMoveDates(fromDate: string): Promise<{ id: string; moveDate: string }[]> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from("quotes")
+    .select("id, move_date")
+    .not("accepted_at", "is", null)
+    .gte("move_date", fromDate);
+  if (error || !data) return [];
+  return data
+    .filter((row) => typeof row.move_date === "string" && row.move_date)
+    .map((row) => ({ id: row.id as string, moveDate: row.move_date.slice(0, 10) }));
+}
+
+/** Quote requests that aren't accepted yet, so the admin calendar can show
+ * a day someone has asked for before it becomes a booking. */
+export async function listPendingMoveDates(fromDate: string): Promise<string[]> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from("quotes")
+    .select("move_date")
+    .is("accepted_at", null)
+    .gte("move_date", fromDate);
+  if (error || !data) return [];
+  return [
+    ...new Set(
+      data
+        .map((row) => (typeof row.move_date === "string" ? row.move_date.slice(0, 10) : ""))
+        .filter((date) => date)
+    ),
+  ];
 }
 
 /** Quotes older than 24 hours, never accepted, never followed up — for the cron job. */

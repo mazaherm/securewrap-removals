@@ -75,3 +75,13 @@ alter table quotes add column if not exists dest_address_line2 text;
 alter table quotes add column if not exists dest_city text;
 alter table quotes add column if not exists dest_postcode text;
 alter table quotes add column if not exists journey_miles numeric;
+alter table quotes add column if not exists dismantle_furniture boolean default false;
+
+-- Days the owner has closed by hand. An accepted booking also closes its
+-- move date in the app (one job per day) without a row here.
+create table if not exists closed_dates (
+  date date primary key,
+  created_at timestamptz not null default now()
+);
+
+alter table closed_dates enable row level security;

@@ -93,6 +93,7 @@ export async function getJourneyDistance(pickup: string, destination: string): P
 export interface CreatePersistedQuoteResult {
   id: string | null;
   bookingRef: string | null;
+  unavailable?: boolean;
 }
 
 /** Records the quote server-side (Supabase, if configured) as soon as the
@@ -112,6 +113,7 @@ export async function createPersistedQuote(payload: {
       headers: { "content-type": "application/json" },
       body: JSON.stringify(payload),
     });
+    if (response.status === 409) return { id: null, bookingRef: null, unavailable: true };
     if (!response.ok) return { id: null, bookingRef: null };
     const data = await response.json();
     return { id: data.id ?? null, bookingRef: data.bookingRef ?? null };
@@ -122,16 +124,22 @@ export async function createPersistedQuote(payload: {
 
 /** Marks a persisted quote as accepted, which triggers the customer and
  * packer confirmation emails server-side (if Resend is configured). */
-export async function acceptPersistedQuote(quoteId: string, paymentOption: PaymentOption): Promise<void> {
+export async function acceptPersistedQuote(
+  quoteId: string,
+  paymentOption: PaymentOption
+): Promise<{ ok: boolean; unavailable?: boolean }> {
   try {
-    await fetch(`/api/quotes/${quoteId}/accept`, {
+    const response = await fetch(`/api/quotes/${quoteId}/accept`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ paymentOption }),
     });
+    if (response.status === 409) return { ok: false, unavailable: true };
+    if (!response.ok) return { ok: false };
+    const data = await response.json();
+    return { ok: Boolean(data.ok) };
   } catch {
-    // Booking already succeeded client-side; a failed notification call
-    // shouldn't block the confirmation screen.
+    return { ok: false };
   }
 }
 

@@ -1,23 +1,50 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Info } from "lucide-react";
-import { OWN_VAN_LOADING_FEE, TIME_SLOTS, VAN_OPTIONS, formatGBP, recommendVanSize } from "@/lib/pricing";
+import { MonthCalendar } from "@/components/calendar/MonthCalendar";
+import { todayInLondon } from "@/lib/dates";
+import { DISMANTLE_REASSEMBLE_FEE, OWN_VAN_LOADING_FEE, TIME_SLOTS, VAN_OPTIONS, formatGBP, recommendVanSize } from "@/lib/pricing";
 import type { QuoteItem, ScheduleDetails, TimeSlot, VanSize } from "@/lib/types";
-
-function todayIso() {
-  return new Date().toISOString().slice(0, 10);
-}
 
 export function StepSchedule({
   items,
   schedule,
   onChange,
+  dateError,
 }: {
   items: QuoteItem[];
   schedule: ScheduleDetails;
   onChange: (schedule: ScheduleDetails) => void;
+  dateError?: string;
 }) {
+  const [unavailable, setUnavailable] = useState<Set<string>>(new Set());
+  const today = todayInLondon();
+
+  useEffect(() => {
+    if (schedule.date && unavailable.has(schedule.date)) {
+      onChange({ ...schedule, date: "" });
+    }
+    // Only react when the unavailable set or the chosen date changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [unavailable, schedule.date]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/availability")
+      .then((response) => (response.ok ? response.json() : { unavailable: [] }))
+      .then((data: { unavailable?: string[] }) => {
+        if (cancelled) return;
+        setUnavailable(new Set(data.unavailable ?? []));
+      })
+      .catch(() => {
+        if (!cancelled) setUnavailable(new Set());
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   function patch(update: Partial<ScheduleDetails>) {
     onChange({ ...schedule, ...update });
   }
@@ -32,23 +59,43 @@ export function StepSchedule({
         Choose when you&rsquo;d like the crew to arrive, and whether you need a van.
       </p>
 
-      <div className="mt-6">
-        <label className="field-label" htmlFor="moveDate">
-          Move date
-        </label>
-        <input
-          id="moveDate"
-          type="date"
-          min={todayIso()}
-          className="field-input sm:max-w-xs"
-          value={schedule.date}
-          onChange={(e) => patch({ date: e.target.value })}
+      <div className="mt-6 max-w-md">
+        <p className="field-label">Move date</p>
+        <p className="mb-3 text-xs text-ink-400">
+          Grey days are already taken or we&rsquo;re not working.
+        </p>
+        <MonthCalendar
+          renderDay={(iso) => {
+            const past = iso < today;
+            const taken = unavailable.has(iso);
+            const selected = schedule.date === iso;
+            const label = Number(iso.slice(8));
+            const disabled = past || taken;
+            return (
+              <button
+                type="button"
+                disabled={disabled}
+                onClick={() => patch({ date: iso })}
+                className={[
+                  "flex h-10 w-full items-center justify-center rounded-md border text-sm font-medium transition-colors",
+                  selected
+                    ? "border-brand-600 bg-brand-600 text-white"
+                    : disabled
+                      ? "cursor-not-allowed border-transparent bg-ink-50 text-ink-300"
+                      : "border-ink-200 bg-white text-ink-800 hover:border-brand-600",
+                ].join(" ")}
+              >
+                {label}
+              </button>
+            );
+          }}
         />
+        {dateError && <p className="mt-3 text-sm text-gold-700">{dateError}</p>}
       </div>
 
       <div className="mt-6">
         <p className="field-label">Arrival window</p>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="grid grid-cols-2 gap-3">
           {TIME_SLOTS.map((slot) => (
             <button
               key={slot.value}
@@ -69,11 +116,49 @@ export function StepSchedule({
       </div>
 
       <div className="mt-8">
+        <p className="field-label">Dismantle and reassemble furniture?</p>
+        <p className="mb-3 text-xs text-ink-400">
+          Tables, beds and similar pieces. We take them apart before the move
+          and put them back together at the destination.
+        </p>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <button
+            type="button"
+            onClick={() => patch({ dismantleFurniture: false })}
+            className={[
+              "rounded-md border px-4 py-3 text-left text-sm font-medium transition-colors",
+              !schedule.dismantleFurniture
+                ? "border-brand-600 bg-brand-50 text-brand-800"
+                : "border-ink-200 text-ink-600 hover:border-ink-300",
+            ].join(" ")}
+          >
+            <span className="block">No thanks</span>
+            <span className="mt-0.5 block text-xs font-normal text-ink-400">Leave furniture as it is</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => patch({ dismantleFurniture: true })}
+            className={[
+              "rounded-md border px-4 py-3 text-left text-sm font-medium transition-colors",
+              schedule.dismantleFurniture
+                ? "border-brand-600 bg-brand-50 text-brand-800"
+                : "border-ink-200 text-ink-600 hover:border-ink-300",
+            ].join(" ")}
+          >
+            <span className="block">Yes, please</span>
+            <span className="mt-0.5 block text-xs font-normal text-ink-400">
+              {formatGBP(DISMANTLE_REASSEMBLE_FEE)} extra
+            </span>
+          </button>
+        </div>
+      </div>
+
+      <div className="mt-8">
         <p className="field-label">Do you need a van?</p>
         <p className="mb-3 text-xs text-ink-400">
           Van hire includes loading and unloading. Fuel is added on your
           quote from the journey: collection to destination, then back to
-          our MK13 0BG depot. If you bring your own van, we charge a small
+          our depot. If you bring your own van, we charge a small
           fee to load your items into it.
         </p>
 

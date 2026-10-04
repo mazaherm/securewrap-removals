@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Menu, Package, Phone, X } from "lucide-react";
+import { phoneHref, site } from "@/lib/site";
 
 const NAV_LINKS = [
   { href: "/services", label: "Services" },
@@ -20,9 +21,7 @@ export function Header() {
           <span className="flex h-9 w-9 items-center justify-center rounded-md bg-gold-400">
             <Package className="h-5 w-5 text-ink-900" strokeWidth={2.25} />
           </span>
-          <span className="text-base font-semibold tracking-tight">
-            SecureWrap <span className="font-normal text-brand-100">Removals</span>
-          </span>
+          <span className="text-base font-semibold tracking-tight">{site.name}</span>
         </Link>
 
         <nav className="hidden items-center gap-8 md:flex">
@@ -39,11 +38,11 @@ export function Header() {
 
         <div className="hidden items-center gap-4 md:flex">
           <a
-            href="tel:+441234567890"
+            href={phoneHref}
             className="flex items-center gap-1.5 text-sm font-medium text-brand-50 hover:text-white"
           >
             <Phone className="h-4 w-4" />
-            0123 456 7890
+            {site.phoneDisplay}
           </a>
           <Link href="/quote" className="btn-gold">
             Get a quote
@@ -74,11 +73,11 @@ export function Header() {
               </Link>
             ))}
             <a
-              href="tel:+441234567890"
+              href={phoneHref}
               className="flex items-center gap-1.5 rounded-md px-3 py-2.5 text-sm font-medium text-brand-50 hover:bg-brand-600 hover:text-white"
             >
               <Phone className="h-4 w-4" />
-              0123 456 7890
+              {site.phoneDisplay}
             </a>
             <Link href="/quote" className="btn-gold mt-2 w-full" onClick={() => setOpen(false)}>
               Get a quote

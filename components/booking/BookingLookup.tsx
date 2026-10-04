@@ -4,8 +4,9 @@ import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { formatGBP } from "@/lib/pricing";
 import type { PublicBooking } from "@/lib/publicBooking";
+import { site } from "@/lib/site";
 
-const BOOKINGS_EMAIL = "bookings@securewrapremovals.co.uk";
+const BOOKINGS_EMAIL = site.email;
 
 type LookupError = "not_found" | "rate_limited" | "unavailable" | null;
 
@@ -118,7 +119,7 @@ export function BookingLookup() {
             className="field-input uppercase"
             value={postcode}
             onChange={(event) => setPostcode(event.target.value)}
-            placeholder="MK13 0BG"
+            placeholder={site.address.postcode}
             autoComplete="postal-code"
             required
           />
@@ -173,6 +174,12 @@ export function BookingLookup() {
                 <dt className="text-xs font-medium uppercase tracking-wide text-ink-400">Van</dt>
                 <dd className="text-ink-800">{booking.van || "—"}</dd>
               </div>
+              <div>
+                <dt className="text-xs font-medium uppercase tracking-wide text-ink-400">Furniture</dt>
+                <dd className="text-ink-800">
+                  {booking.dismantleFurniture ? "Dismantle and reassemble" : "Leave as it is"}
+                </dd>
+              </div>
             </dl>
 
             <div className="mt-5">
@@ -182,12 +189,8 @@ export function BookingLookup() {
               <ul className="mt-2 divide-y divide-ink-50">
                 {booking.items.map((item, index) => (
                   <li key={`${item.label}-${index}`} className="py-2 text-sm">
-                    <p className="font-medium text-ink-800">{item.label || item.type}</p>
-                    <p className="text-xs text-ink-500">
-                      {item.type}
-                      {item.wrap ? ` · ${item.wrap}` : ""}
-                      {item.size ? ` · ${item.size}` : ""}
-                    </p>
+                    <p className="font-medium text-ink-800">{item.label || "Untitled item"}</p>
+                    {item.notes?.trim() && <p className="text-xs text-ink-500">{item.notes}</p>}
                   </li>
                 ))}
               </ul>

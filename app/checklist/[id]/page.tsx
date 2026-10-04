@@ -2,9 +2,10 @@ import type { Metadata } from "next";
 import { Package } from "lucide-react";
 import { getChecklistState, getQuoteById } from "@/lib/quotes";
 import { ChecklistView } from "@/components/checklist/ChecklistView";
+import { site } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: "Packing checklist | SecureWrap Removals",
+  title: `Packing checklist | ${site.name}`,
 };
 
 export default async function ChecklistPage({ params }: { params: { id: string } }) {
@@ -30,7 +31,7 @@ export default async function ChecklistPage({ params }: { params: { id: string }
           <span className="flex h-9 w-9 items-center justify-center rounded-md bg-brand-700">
             <Package className="h-4 w-4 text-gold-300" />
           </span>
-          <span className="text-sm font-semibold text-ink-900">SecureWrap Removals</span>
+          <span className="text-sm font-semibold text-ink-900">{site.name}</span>
         </div>
 
         <h1 className="mt-6 text-2xl font-semibold tracking-tight text-ink-900">

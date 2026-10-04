@@ -31,17 +31,9 @@ export function WhyTrustUs() {
   return (
     <section className="border-b border-ink-100 py-16 sm:py-20">
       <div className="container-page">
-        <div className="max-w-2xl">
-          <span className="section-eyebrow">Why customers choose us</span>
-          <h2 className="mt-2 text-3xl font-semibold tracking-tight text-ink-900">
-            New company, straightforward promise
-          </h2>
-          <p className="mt-3 text-ink-500">
-            We&rsquo;re just getting started, so instead of asking you to
-            trust a star rating, here&rsquo;s exactly how we protect your
-            move.
-          </p>
-        </div>
+        <h2 className="text-3xl font-semibold tracking-tight text-ink-900">
+          Why customers choose us
+        </h2>
 
         <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2">
           {POINTS.map((point) => (

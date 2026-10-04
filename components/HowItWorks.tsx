@@ -6,8 +6,8 @@ const STEPS = [
   },
   {
     number: "02",
-    title: "Choose protection",
-    description: "Tell us what each item is, then pick the wrap type and size based on how fragile it is.",
+    title: "Add a note",
+    description: "Tell us the item name and anything the wrapping team should know, such as if it is fragile. We decide how to wrap it.",
   },
   {
     number: "03",

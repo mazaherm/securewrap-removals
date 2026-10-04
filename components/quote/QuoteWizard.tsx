@@ -4,12 +4,10 @@ import { useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { StepIndicator, type StepDef } from "./StepIndicator";
 import { StepUpload } from "./StepUpload";
-import { StepWrapping } from "./StepWrapping";
 import { StepProperty } from "./StepProperty";
 import { StepSchedule } from "./StepSchedule";
 import { StepQuote } from "./StepQuote";
 import { Confirmation } from "./Confirmation";
-import { isValidCatalogKey } from "@/lib/itemCatalog";
 import { calculateQuote } from "@/lib/pricing";
 import { makeBookingRef } from "@/lib/bookingRef";
 import { acceptPersistedQuote, createPersistedQuote, sendReceiptFallback } from "@/lib/quoteApi";
@@ -24,7 +22,6 @@ import type {
 
 const STEPS: StepDef[] = [
   { key: "upload", label: "Upload photos" },
-  { key: "wrapping", label: "Protection" },
   { key: "property", label: "Your details" },
   { key: "schedule", label: "Date & van" },
   { key: "quote", label: "Your quote" },
@@ -61,9 +58,11 @@ export function QuoteWizard() {
     date: "",
     timeSlot: "morning",
     vanSize: "none",
+    dismantleFurniture: false,
   });
   const [booking, setBooking] = useState<BookingConfirmation | null>(null);
   const [persisted, setPersisted] = useState<{ id: string; bookingRef: string } | null>(null);
+  const [dateError, setDateError] = useState("");
   const hasPersistedRef = useRef(false);
 
   // Records the quote (and the customer's email) as soon as they reach the
@@ -75,6 +74,13 @@ export function QuoteWizard() {
     if (!contact.email.trim()) return;
     hasPersistedRef.current = true;
     createPersistedQuote({ items, contact, property, schedule }).then((result) => {
+      if (result.unavailable) {
+        hasPersistedRef.current = false;
+        setDateError("That day is no longer available. Please choose another.");
+        setSchedule((current) => ({ ...current, date: "" }));
+        setStepIndex(STEPS.findIndex((step) => step.key === "schedule"));
+        return;
+      }
       if (result.id && result.bookingRef) setPersisted({ id: result.id, bookingRef: result.bookingRef });
     });
   }, [stepIndex, items, contact, property, schedule]);
@@ -83,8 +89,6 @@ export function QuoteWizard() {
     switch (STEPS[index].key) {
       case "upload":
         return items.length > 0;
-      case "wrapping":
-        return items.length > 0 && items.every((item) => isValidCatalogKey(item.itemType));
       case "property":
         return Boolean(
           contact.fullName.trim() &&
@@ -116,13 +120,23 @@ export function QuoteWizard() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  function handleAccept(paymentOption: PaymentOption) {
+  async function handleAccept(paymentOption: PaymentOption) {
+    if (persisted) {
+      const result = await acceptPersistedQuote(persisted.id, paymentOption);
+      if (result.unavailable) {
+        hasPersistedRef.current = false;
+        setDateError("That day has just been booked. Please choose another.");
+        setSchedule((current) => ({ ...current, date: "" }));
+        setStepIndex(STEPS.findIndex((step) => step.key === "schedule"));
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return;
+      }
+    }
+
     const bookingRef = persisted?.bookingRef ?? makeBookingRef();
     setBooking({ bookingRef, paymentOption });
     window.scrollTo({ top: 0, behavior: "smooth" });
-    if (persisted) {
-      acceptPersistedQuote(persisted.id, paymentOption);
-    } else if (contact.email.trim()) {
+    if (!persisted && contact.email.trim()) {
       // No Supabase configured (or persistence failed) — still send a
       // receipt directly, so the customer isn't left with no email at all.
       const breakdown = calculateQuote(items, property, schedule);
@@ -169,9 +183,6 @@ export function QuoteWizard() {
           {STEPS[stepIndex].key === "upload" && (
             <StepUpload items={items} onChange={setItems} />
           )}
-          {STEPS[stepIndex].key === "wrapping" && (
-            <StepWrapping items={items} onChange={setItems} />
-          )}
           {STEPS[stepIndex].key === "property" && (
             <StepProperty
               contact={contact}
@@ -181,7 +192,15 @@ export function QuoteWizard() {
             />
           )}
           {STEPS[stepIndex].key === "schedule" && (
-            <StepSchedule items={items} schedule={schedule} onChange={setSchedule} />
+            <StepSchedule
+              items={items}
+              schedule={schedule}
+              dateError={dateError}
+              onChange={(next) => {
+                if (next.date !== schedule.date) setDateError("");
+                setSchedule(next);
+              }}
+            />
           )}
           {STEPS[stepIndex].key === "quote" && (
             <StepQuote

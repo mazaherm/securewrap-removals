@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { Phone } from "lucide-react";
 import { calculateQuote, formatGBP } from "@/lib/pricing";
+import { phoneHref } from "@/lib/site";
 import type {
   ContactDetails,
   PaymentOption,
@@ -22,13 +23,24 @@ export function StepQuote({
   contact: ContactDetails;
   property: PropertyDetails;
   schedule: ScheduleDetails;
-  onAccept: (paymentOption: PaymentOption) => void;
+  onAccept: (paymentOption: PaymentOption) => void | Promise<void>;
 }) {
   const breakdown = useMemo(
     () => calculateQuote(items, property, schedule),
     [items, property, schedule]
   );
   const [paymentOption, setPaymentOption] = useState<PaymentOption>("pay_now");
+  const [accepting, setAccepting] = useState(false);
+
+  async function confirm() {
+    if (accepting) return;
+    setAccepting(true);
+    try {
+      await onAccept(paymentOption);
+    } finally {
+      setAccepting(false);
+    }
+  }
 
   return (
     <div>
@@ -108,12 +120,13 @@ export function StepQuote({
       <div className="mt-8 flex flex-col gap-3 sm:flex-row">
         <button
           type="button"
-          onClick={() => onAccept(paymentOption)}
+          onClick={confirm}
+          disabled={accepting}
           className="btn-primary w-full sm:w-auto"
         >
-          Accept quote{paymentOption === "pay_now" ? " & pay now" : ""}
+          {accepting ? "Booking…" : `Accept quote${paymentOption === "pay_now" ? " & pay now" : ""}`}
         </button>
-        <a href="tel:+441234567890" className="btn-outline w-full sm:w-auto">
+        <a href={phoneHref} className="btn-outline w-full sm:w-auto">
           <Phone className="h-4 w-4" />
           Call to discuss instead
         </a>

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { acceptQuote } from "@/lib/quotes";
+import { isDateAvailable } from "@/lib/availability";
+import { acceptQuote, getQuoteById } from "@/lib/quotes";
 import { sendCustomerAcceptanceEmail, sendPackerNotificationEmail } from "@/lib/email";
 import type { PaymentOption } from "@/lib/types";
 
@@ -16,6 +17,11 @@ export async function POST(request: Request, { params }: { params: { id: string 
 
   if (body.paymentOption !== "pay_now" && body.paymentOption !== "pay_on_day") {
     return NextResponse.json({ ok: false }, { status: 400 });
+  }
+
+  const existing = await getQuoteById(params.id);
+  if (existing && !existing.acceptedAt && !(await isDateAvailable(existing.moveDate, existing.id))) {
+    return NextResponse.json({ ok: false, error: "date_unavailable" }, { status: 409 });
   }
 
   const record = await acceptQuote(params.id, body.paymentOption);

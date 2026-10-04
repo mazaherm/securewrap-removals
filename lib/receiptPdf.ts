@@ -1,6 +1,6 @@
 import { jsPDF } from "jspdf";
-import { getCatalogEntry } from "./itemCatalog";
-import { formatGBP, SIZE_OPTIONS, TIME_SLOTS, VAN_OPTIONS, WRAP_OPTIONS } from "./pricing";
+import { formatGBP, TIME_SLOTS, VAN_OPTIONS } from "./pricing";
+import { site } from "./site";
 import { destinationTypeLabel, type DestinationType, type PaymentOption, type TimeSlot, type VanSize } from "./types";
 
 const PAGE_MARGIN = 14;
@@ -15,9 +15,7 @@ const THUMB_SIZE = 20;
 // adapter — both already satisfy these shapes.
 export interface ReceiptItem {
   label: string;
-  itemType: string;
-  wrapTypes: string[];
-  size: string;
+  notes?: string;
   photoUrl: string;
 }
 
@@ -37,6 +35,7 @@ export interface ReceiptSchedule {
   date: string;
   timeSlot: TimeSlot;
   vanSize: VanSize;
+  dismantleFurniture?: boolean;
 }
 
 export interface ReceiptInput {
@@ -49,10 +48,6 @@ export interface ReceiptInput {
   items: ReceiptItem[];
   property: ReceiptProperty;
   schedule: ReceiptSchedule;
-}
-
-function wrapLabel(values: string[]) {
-  return values.map((value) => WRAP_OPTIONS.find((w) => w.value === value)?.label ?? value).join(" + ");
 }
 
 function formatDate(dateIso: string) {
@@ -78,7 +73,7 @@ export function buildReceiptPdf(input: ReceiptInput): Uint8Array {
   doc.setFontSize(16);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(20, 20, 20);
-  doc.text("SecureWrap Removals", PAGE_MARGIN, y);
+  doc.text(site.name, PAGE_MARGIN, y);
   y += 6;
   doc.setFontSize(11);
   doc.setFont("helvetica", "normal");
@@ -113,6 +108,7 @@ export function buildReceiptPdf(input: ReceiptInput): Uint8Array {
     }`,
     `Move date: ${formatDate(input.schedule.date)}  -  ${slot?.label ?? ""} (${slot?.window ?? ""})`,
     `Van: ${VAN_OPTIONS.find((v) => v.value === input.schedule.vanSize)?.label ?? "Not required"}`,
+    `Dismantle & reassemble: ${input.schedule.dismantleFurniture ? "Yes" : "No"}`,
   ];
 
   infoLines.forEach((line) => {
@@ -157,12 +153,11 @@ export function buildReceiptPdf(input: ReceiptInput): Uint8Array {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9.5);
     doc.setTextColor(90, 90, 90);
-    doc.text(getCatalogEntry(item.itemType).label, textX, y + 9.5);
-    doc.text(
-      `Wrap: ${wrapLabel(item.wrapTypes)}   Size: ${SIZE_OPTIONS.find((s) => s.value === item.size)?.label ?? item.size}`,
-      textX,
-      y + 14.5
-    );
+    const note = item.notes?.trim();
+    if (note) {
+      const lines = doc.splitTextToSize(`Note: ${note}`, PAGE_WIDTH - textX - PAGE_MARGIN);
+      doc.text(lines.slice(0, 3), textX, y + 9.5);
+    }
     doc.setTextColor(20, 20, 20);
 
     y += ROW_HEIGHT - 6;
@@ -176,7 +171,7 @@ export function buildReceiptPdf(input: ReceiptInput): Uint8Array {
     doc.setFontSize(8);
     doc.setTextColor(150, 150, 150);
     doc.text(
-      `SecureWrap Removals  -  ${paymentStatusLabel(input.paymentOption)}  -  Page ${p} of ${pageCount}`,
+      `${site.name}  -  ${paymentStatusLabel(input.paymentOption)}  -  Page ${p} of ${pageCount}`,
       PAGE_MARGIN,
       PAGE_HEIGHT - 8
     );

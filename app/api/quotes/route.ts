@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isDateAvailable } from "@/lib/availability";
 import { calculateQuote } from "@/lib/pricing";
 import { makeBookingRef } from "@/lib/bookingRef";
 import { createQuote } from "@/lib/quotes";
@@ -25,6 +26,10 @@ export async function POST(request: Request): Promise<Response> {
   const { items, contact, property, schedule } = body;
   if (!contact?.email?.trim() || !Array.isArray(items)) {
     return NextResponse.json({ id: null, bookingRef: null }, { status: 400 });
+  }
+
+  if (schedule?.date && !(await isDateAvailable(schedule.date))) {
+    return NextResponse.json({ id: null, bookingRef: null, error: "date_unavailable" }, { status: 409 });
   }
 
   // Prices are recalculated server-side rather than trusting client totals.
@@ -55,12 +60,11 @@ export async function POST(request: Request): Promise<Response> {
     moveDate: schedule.date,
     timeSlot: schedule.timeSlot,
     vanSize: schedule.vanSize,
+    dismantleFurniture: schedule.dismantleFurniture === true,
     items: items.map((item) => ({
       id: item.id,
       label: item.label,
-      itemType: item.itemType,
-      wrapTypes: item.wrapTypes,
-      size: item.size,
+      notes: item.notes,
       photoUrl: item.photoUrl,
     })),
     lineItems: breakdown.lineItems,

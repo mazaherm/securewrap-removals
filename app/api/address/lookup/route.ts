@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { normalizeUkPostcode } from "@/lib/distance";
 import { lookupPostcode } from "@/lib/postcodes";
+import { site } from "@/lib/site";
 
 export const runtime = "nodejs";
 // Force per-request execution — without this, Next can statically cache
@@ -93,7 +94,7 @@ async function lookupViaOverpass(postcode: string, fallbackTown: string): Promis
       method: "POST",
       headers: {
         "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
-        "user-agent": "SecureWrapRemovals/1.0 (address lookup)",
+        "user-agent": `${site.name.replace(/\s+/g, "")}/1.0 (address lookup)`,
       },
       body: `data=${encodeURIComponent(query)}`,
       signal: controller.signal,

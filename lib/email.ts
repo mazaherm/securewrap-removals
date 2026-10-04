@@ -1,6 +1,6 @@
 import { Resend } from "resend";
-import { getCatalogEntry } from "./itemCatalog";
-import { WRAP_OPTIONS, SIZE_OPTIONS, formatGBP } from "./pricing";
+import { site } from "./site";
+import { formatGBP } from "./pricing";
 import { buildReceiptPdf } from "./receiptPdf";
 import type { QuoteRecord } from "./quotes";
 import type {
@@ -26,23 +26,13 @@ export function isEmailConfigured(): boolean {
   return Boolean(process.env.RESEND_API_KEY);
 }
 
-const FROM_ADDRESS = process.env.RESEND_FROM_EMAIL || "SecureWrap Removals <onboarding@resend.dev>";
+const FROM_ADDRESS = process.env.RESEND_FROM_EMAIL || `${site.name} <onboarding@resend.dev>`;
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
-const BOOKINGS_EMAIL = process.env.PACKER_EMAIL || "bookings@securewrapremovals.co.uk";
-
-function wrapLabel(values: string[]): string {
-  return values.map((v) => WRAP_OPTIONS.find((w) => w.value === v)?.label ?? v).join(" + ");
-}
-
-function sizeLabel(value: string): string {
-  return SIZE_OPTIONS.find((s) => s.value === value)?.label ?? value;
-}
+const BOOKINGS_EMAIL = process.env.PACKER_EMAIL || site.email;
 
 interface ItemLike {
   label: string;
-  itemType: string;
-  wrapTypes: string[];
-  size: string;
+  notes?: string;
 }
 
 function itemListHtml(items: ItemLike[]): string {
@@ -50,8 +40,7 @@ function itemListHtml(items: ItemLike[]): string {
     .map(
       (item) => `<tr>
         <td style="padding:6px 10px;border-bottom:1px solid #eee;">${escapeHtml(item.label)}</td>
-        <td style="padding:6px 10px;border-bottom:1px solid #eee;">${escapeHtml(getCatalogEntry(item.itemType).label)}</td>
-        <td style="padding:6px 10px;border-bottom:1px solid #eee;">${escapeHtml(wrapLabel(item.wrapTypes))}, ${escapeHtml(sizeLabel(item.size))}</td>
+        <td style="padding:6px 10px;border-bottom:1px solid #eee;">${escapeHtml(item.notes?.trim() || "—")}</td>
       </tr>`
     )
     .join("");
@@ -67,7 +56,7 @@ function baseLayout(title: string, bodyHtml: string): string {
   <body style="font-family:Arial,Helvetica,sans-serif;background:#f6f7f7;padding:24px;color:#1a1d1b;">
     <div style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:10px;overflow:hidden;border:1px solid #e8eae9;">
       <div style="background:#0b4a2f;padding:20px 24px;">
-        <span style="color:#ffffff;font-size:16px;font-weight:600;">SecureWrap Removals</span>
+        <span style="color:#ffffff;font-size:16px;font-weight:600;">${escapeHtml(site.name)}</span>
       </div>
       <div style="padding:24px;">
         <h1 style="font-size:18px;margin:0 0 12px;">${title}</h1>
@@ -106,6 +95,7 @@ function receiptPdfForQuote(quote: QuoteRecord): Buffer {
         date: quote.moveDate,
         timeSlot: quote.timeSlot as TimeSlot,
         vanSize: quote.vanSize as VanSize,
+        dismantleFurniture: quote.dismantleFurniture,
       },
     })
   );
@@ -137,7 +127,7 @@ export async function sendCustomerAcceptanceEmail(quote: QuoteRecord): Promise<v
     ),
     attachments: [
       {
-        filename: `securewrap-receipt-${quote.bookingRef}.pdf`,
+        filename: `${site.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}-receipt-${quote.bookingRef}.pdf`,
         content: receiptPdfForQuote(quote),
       },
     ],
@@ -201,12 +191,12 @@ export async function sendPackerNotificationEmail(quote: QuoteRecord): Promise<v
        <p><strong>From:</strong> ${escapeHtml(addressLine || "—")}<br/>
        <strong>To:</strong> ${escapeHtml(destinationLine || "—")}</p>
        <p><strong>Date:</strong> ${escapeHtml(quote.moveDate)} (${escapeHtml(quote.timeSlot)})<br/>
-       <strong>Van:</strong> ${escapeHtml(quote.vanSize)}</p>
+       <strong>Van:</strong> ${escapeHtml(quote.vanSize)}<br/>
+       <strong>Dismantle &amp; reassemble:</strong> ${quote.dismantleFurniture ? "Yes" : "No"}</p>
        <table style="width:100%;border-collapse:collapse;margin-top:12px;font-size:14px;">
          <thead><tr>
            <th style="text-align:left;padding:6px 10px;border-bottom:2px solid #ddd;">Item</th>
-           <th style="text-align:left;padding:6px 10px;border-bottom:2px solid #ddd;">Type</th>
-           <th style="text-align:left;padding:6px 10px;border-bottom:2px solid #ddd;">Wrap / Size</th>
+           <th style="text-align:left;padding:6px 10px;border-bottom:2px solid #ddd;">Note</th>
          </tr></thead>
          <tbody>${itemListHtml(quote.items)}</tbody>
        </table>
@@ -308,8 +298,7 @@ export async function sendReceiptEmail(
          <table style="width:100%;border-collapse:collapse;margin-top:12px;font-size:14px;">
            <thead><tr>
              <th style="text-align:left;padding:6px 10px;border-bottom:2px solid #ddd;">Item</th>
-             <th style="text-align:left;padding:6px 10px;border-bottom:2px solid #ddd;">Type</th>
-             <th style="text-align:left;padding:6px 10px;border-bottom:2px solid #ddd;">Wrap / Size</th>
+             <th style="text-align:left;padding:6px 10px;border-bottom:2px solid #ddd;">Note</th>
            </tr></thead>
            <tbody>${itemListHtml(input.items)}</tbody>
          </table>
@@ -317,7 +306,7 @@ export async function sendReceiptEmail(
          <p>A PDF receipt with your full item list is attached.</p>
          <p style="color:#788279;font-size:13px;">Keep your booking reference safe — quote it if you need to reach us. Just reply to this email or call us with any questions.</p>`
       ),
-      attachments: [{ filename: `securewrap-receipt-${input.bookingRef}.pdf`, content: receiptPdf }],
+      attachments: [{ filename: `${site.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}-receipt-${input.bookingRef}.pdf`, content: receiptPdf }],
     }),
     (async () => {
       if (!process.env.PACKER_EMAIL) return;
@@ -331,12 +320,12 @@ export async function sendReceiptEmail(
            <p><strong>From:</strong> ${escapeHtml(addressLine || "—")}<br/>
            <strong>To:</strong> ${escapeHtml(destinationLine || "—")}</p>
            <p><strong>Date:</strong> ${escapeHtml(input.schedule.date)} (${escapeHtml(input.schedule.timeSlot)})<br/>
-           <strong>Van:</strong> ${escapeHtml(input.schedule.vanSize)}</p>
+           <strong>Van:</strong> ${escapeHtml(input.schedule.vanSize)}<br/>
+           <strong>Dismantle &amp; reassemble:</strong> ${input.schedule.dismantleFurniture ? "Yes" : "No"}</p>
            <table style="width:100%;border-collapse:collapse;margin-top:12px;font-size:14px;">
              <thead><tr>
                <th style="text-align:left;padding:6px 10px;border-bottom:2px solid #ddd;">Item</th>
-               <th style="text-align:left;padding:6px 10px;border-bottom:2px solid #ddd;">Type</th>
-               <th style="text-align:left;padding:6px 10px;border-bottom:2px solid #ddd;">Wrap / Size</th>
+               <th style="text-align:left;padding:6px 10px;border-bottom:2px solid #ddd;">Note</th>
              </tr></thead>
              <tbody>${itemListHtml(input.items)}</tbody>
            </table>`
